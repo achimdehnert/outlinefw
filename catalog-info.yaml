@@ -1,0 +1,24 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: outlinefw
+  description: iil-outlinefw — Story Outline Framework for all iil platform applications
+  tags: [python, ai, story, outline, framework]
+  annotations:
+    github.com/project-slug: achimdehnert/outlinefw
+    pypi/package-name: iil-outlinefw
+    pypi/publish-workflow: publish.yml
+  x-pypi-packages:
+    - name: iil-outlinefw
+      pypi_name: iil-outlinefw
+      tag_prefix: "v"
+      root_package: true
+spec:
+  type: library
+  lifecycle: active
+  owner: achimdehnert
+  system: ai-platform
+  domain: content
+  providesApis: []
+  dependsOn:
+    - component:authoringfw
