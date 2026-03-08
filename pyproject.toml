@@ -1,65 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "iil-outlinefw"
 version = "0.1.0"
-description = "Story Outline Framework -- Pydantic schemas, beat frameworks, LLM generator. Pure Python, no Django."
+description = "Zentrales Story-Outline-Framework fuer alle iil-Platform-Applikationen"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
-license = {text = "MIT"}
 authors = [
-    {name = "Achim Dehnert", email = "achim@dehnert.com"}
+    { name = "Achim Dehnert", email = "achim@dehnert.dev" },
 ]
-keywords = ["llm", "story", "outline", "creative-writing", "ai", "schema", "pydantic", "three-act", "save-the-cat"]
+keywords = ["story", "outline", "framework", "creative-writing", "iil-platform"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Text Processing :: Linguistic",
+    "Typing :: Typed",
 ]
 
 dependencies = [
-    "pydantic>=2.6,<3",
+    "pydantic>=2.5,<3",
 ]
 
 [project.optional-dependencies]
-aifw = [
-    "iil-aifw>=0.6.0,<1",
-]
-all = [
-    "iil-aifw>=0.6.0,<1",
+django = [
+    "django>=4.2,<6.0",
 ]
 dev = [
     "pytest>=8.0",
-    "pytest-mock>=3.12",
-    "ruff>=0.3",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "mypy>=1.9",
+    "pydantic>=2.5,<3",
 ]
-testing = [
-    "pytest>=8.0",
-    "pytest-mock>=3.12",
+full = [
+    "iil-outlinefw[django,dev]",
 ]
 
 [project.urls]
 Homepage = "https://github.com/achimdehnert/outlinefw"
 Repository = "https://github.com/achimdehnert/outlinefw"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+Issues = "https://github.com/achimdehnert/outlinefw/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/outlinefw"]
 
-[tool.pytest.ini_options]
-python_files = ["test_*.py"]
-pythonpath = ["src"]
-testpaths = ["tests"]
-
 [tool.ruff]
-line-length = 100
 target-version = "py311"
+line-length = 100
+src = ["src"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+select = ["E", "W", "F", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
+ignore = ["ANN101", "ANN102"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["outlinefw"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "src"
+packages = ["outlinefw"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = ["--tb=short"]
+
+[tool.coverage.run]
+source = ["src/outlinefw"]
+omit = ["tests/*"]

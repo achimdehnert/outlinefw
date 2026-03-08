@@ -1,121 +1,136 @@
 """
-outlinefw.frameworks -- Story Structure Framework Definitions
+outlinefw/src/outlinefw/frameworks.py
 
-Zentrale Quelle fuer alle Beat-Strukturen. Keine Django-Abhaengigkeit.
+Complete, versioned story framework definitions for iil-outlinefw v0.1.0.
+All frameworks validated on import via FrameworkDefinition (Pydantic).
 """
+
 from __future__ import annotations
 
-from typing import TypedDict
+from outlinefw.schemas import ActPhase, BeatDefinition, FrameworkDefinition, TensionLevel
 
 
-class BeatDefinition(TypedDict):
-    name: str
-    position: float
-    act: str
-    description: str
-    tension: str
+THREE_ACT = FrameworkDefinition(
+    key="three_act",
+    name="Drei-Akt-Struktur",
+    description=(
+        "Die klassische Drei-Akt-Struktur nach Aristoteles. "
+        "Akt 1: Exposition und Aufbruch. Akt 2: Konfrontation und Komplikation. "
+        "Akt 3: Klimax und Aufloesung."
+    ),
+    version="1.0.0",
+    beats=[
+        BeatDefinition(name="exposition", position=0.0, act=ActPhase.ACT_1, description="Vorstellung der Welt, der Figuren und des Status Quo.", tension=TensionLevel.LOW),
+        BeatDefinition(name="inciting_incident", position=0.12, act=ActPhase.ACT_1, description="Das ausloesende Ereignis, das die Geschichte in Gang setzt.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="first_turning_point", position=0.25, act=ActPhase.ACT_1, description="Der Protagonist trifft eine unwiderrufliche Entscheidung und tritt in Akt 2 ein.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="midpoint", position=0.50, act=ActPhase.ACT_2A, description="Falsche Niederlage oder falscher Sieg.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="second_turning_point", position=0.75, act=ActPhase.ACT_2B, description="Tiefpunkt: Alles scheint verloren.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="climax", position=0.88, act=ActPhase.ACT_3, description="Der finale Konflikt.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="resolution", position=1.0, act=ActPhase.ACT_3, description="Die neue Normalitaet.", tension=TensionLevel.LOW),
+    ],
+)
 
+SAVE_THE_CAT = FrameworkDefinition(
+    key="save_the_cat",
+    name="Save the Cat (Blake Snyder)",
+    description="Blake Snyders 15-Beat-Sheet fuer kommerziell erfolgreiche Drehbuecher.",
+    version="1.0.0",
+    beats=[
+        BeatDefinition(name="opening_image", position=0.0, act=ActPhase.ACT_1, description="Ein Schnappschuss der Welt vor der Geschichte.", tension=TensionLevel.LOW),
+        BeatDefinition(name="theme_stated", position=0.05, act=ActPhase.ACT_1, description="Jemand formuliert das Thema der Geschichte.", tension=TensionLevel.LOW),
+        BeatDefinition(name="setup", position=0.09, act=ActPhase.ACT_1, description="Vorstellung von Welt, Figuren und Status Quo.", tension=TensionLevel.LOW),
+        BeatDefinition(name="catalyst", position=0.12, act=ActPhase.ACT_1, description="Das ausloesende Ereignis.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="debate", position=0.18, act=ActPhase.ACT_1, description="Der Protagonist zoegert.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="break_into_two", position=0.25, act=ActPhase.ACT_2A, description="Der Protagonist waehlt aktiv.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="b_story", position=0.30, act=ActPhase.ACT_2A, description="Einfuehrung der B-Story.", tension=TensionLevel.LOW),
+        BeatDefinition(name="fun_and_games", position=0.38, act=ActPhase.ACT_2A, description="Die Praemisse des Films wird eingeloest.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="midpoint", position=0.50, act=ActPhase.ACT_2A, description="Falscher Sieg oder falsche Niederlage.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="bad_guys_close_in", position=0.60, act=ActPhase.ACT_2B, description="Antagonistische Kraefte schliessen sich zusammen.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="all_is_lost", position=0.75, act=ActPhase.ACT_2B, description="Das Gegenteil von Akt-2-Einstieg.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="dark_night_of_the_soul", position=0.80, act=ActPhase.ACT_2B, description="Der tiefste Moment.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="break_into_three", position=0.85, act=ActPhase.ACT_3, description="A- und B-Story konvergieren.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="finale", position=0.92, act=ActPhase.ACT_3, description="Der Protagonist stuermt die Burg.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="final_image", position=1.0, act=ActPhase.ACT_3, description="Spiegel zum Opening Image.", tension=TensionLevel.LOW),
+    ],
+)
 
-class FrameworkDefinition(TypedDict):
-    name: str
-    description: str
-    beats: list[str]
-    beat_details: list[BeatDefinition]
+HEROS_JOURNEY = FrameworkDefinition(
+    key="heros_journey",
+    name="Heldenreise (Joseph Campbell)",
+    description="Joseph Campbells Monomythos. 12 Stationen der transformativen Reise des Helden.",
+    version="1.0.0",
+    beats=[
+        BeatDefinition(name="ordinary_world", position=0.0, act=ActPhase.ACT_1, description="Die gewoehnliche Welt des Helden.", tension=TensionLevel.LOW),
+        BeatDefinition(name="call_to_adventure", position=0.09, act=ActPhase.ACT_1, description="Der Ruf zur Reise.", tension=TensionLevel.LOW),
+        BeatDefinition(name="refusal_of_call", position=0.16, act=ActPhase.ACT_1, description="Der Held verweigert zunaechst.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="meeting_the_mentor", position=0.22, act=ActPhase.ACT_1, description="Der Mentor erscheint.", tension=TensionLevel.LOW),
+        BeatDefinition(name="crossing_the_threshold", position=0.28, act=ActPhase.ACT_2A, description="Der Held betritt die besondere Welt.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="tests_allies_enemies", position=0.38, act=ActPhase.ACT_2A, description="Der Held wird getestet.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="approach_to_inmost_cave", position=0.48, act=ActPhase.ACT_2A, description="Annaeherung an das Heiligtum.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="ordeal", position=0.55, act=ActPhase.ACT_2B, description="Die zentrale Krise.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="reward", position=0.65, act=ActPhase.ACT_2B, description="Der Held ueberlebt und gewinnt den Preis.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="road_back", position=0.75, act=ActPhase.ACT_3, description="Aufbruch zur Heimreise.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="resurrection", position=0.88, act=ActPhase.ACT_3, description="Zweite Krise. Letzte Transformation.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="return_with_elixir", position=1.0, act=ActPhase.ACT_3, description="Heimkehr mit dem Elixier.", tension=TensionLevel.LOW),
+    ],
+)
+
+FIVE_ACT = FrameworkDefinition(
+    key="five_act",
+    name="Fuenf-Akt-Struktur (Shakespeare)",
+    description="Gustav Freytags Pyramide. 5 Akte: Exposition, Steigerung, Klimax, Wendung, Katastrophe.",
+    version="1.0.0",
+    beats=[
+        BeatDefinition(name="exposition", position=0.0, act=ActPhase.ACT_1, description="Einfuehrung der Figuren, der Welt und des dramatischen Konflikts.", tension=TensionLevel.LOW),
+        BeatDefinition(name="rising_action", position=0.22, act=ActPhase.ACT_2A, description="Zunehmende Komplikationen.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="climax", position=0.50, act=ActPhase.ACT_2B, description="Wendepunkt. Der entscheidende Moment.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="falling_action", position=0.72, act=ActPhase.ACT_3, description="Die Konsequenzen des Klimax.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="denouement", position=1.0, act=ActPhase.ACT_3, description="Katastrophe oder Apotheose. Finale Ordnung.", tension=TensionLevel.LOW),
+    ],
+)
+
+DAN_HARMON = FrameworkDefinition(
+    key="dan_harmon",
+    name="Dan Harmon Story Circle",
+    description="Dan Harmons Vereinfachung der Heldenreise in 8 Stationen. Ideal fuer Episodenformat.",
+    version="1.0.0",
+    beats=[
+        BeatDefinition(name="you", position=0.0, act=ActPhase.ACT_1, description="Eine Figur in ihrer Komfortzone.", tension=TensionLevel.LOW),
+        BeatDefinition(name="need", position=0.14, act=ActPhase.ACT_1, description="Die Figur will oder braucht etwas.", tension=TensionLevel.LOW),
+        BeatDefinition(name="go", position=0.25, act=ActPhase.ACT_2A, description="Die Figur verlaesst die Komfortzone.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="search", position=0.38, act=ActPhase.ACT_2A, description="Suche nach dem Ziel.", tension=TensionLevel.MEDIUM),
+        BeatDefinition(name="find", position=0.50, act=ActPhase.ACT_2B, description="Die Figur findet, was sie gesucht hat.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="take", position=0.63, act=ActPhase.ACT_2B, description="Das Gefundene wird genommen.", tension=TensionLevel.PEAK),
+        BeatDefinition(name="return", position=0.75, act=ActPhase.ACT_3, description="Rueckkehr in die vertraute Welt.", tension=TensionLevel.HIGH),
+        BeatDefinition(name="change", position=1.0, act=ActPhase.ACT_3, description="Die Figur hat sich veraendert.", tension=TensionLevel.LOW),
+    ],
+)
 
 
 FRAMEWORKS: dict[str, FrameworkDefinition] = {
-    "three_act": {
-        "name": "Drei-Akt-Struktur",
-        "description": "Klassisch: Setup, Konfrontation, Aufloesung",
-        "beats": ["Setup", "Inciting Incident", "Rising Action", "Midpoint", "Crisis", "Climax", "Resolution"],
-        "beat_details": [
-            {"name": "Setup",             "position": 0.00, "act": "act_1",  "description": "Welt und Charakter etablieren",     "tension": "low"},
-            {"name": "Inciting Incident", "position": 0.12, "act": "act_1",  "description": "Ausloser der Geschichte",           "tension": "medium"},
-            {"name": "Rising Action",     "position": 0.25, "act": "act_2a", "description": "Konflikte eskalieren",              "tension": "medium"},
-            {"name": "Midpoint",          "position": 0.50, "act": "act_2a", "description": "Falscher Sieg oder Niederlage",    "tension": "high"},
-            {"name": "Crisis",            "position": 0.75, "act": "act_2b", "description": "Alles scheint verloren",           "tension": "peak"},
-            {"name": "Climax",            "position": 0.88, "act": "act_3",  "description": "Hoehepunkt und Entscheidung",     "tension": "peak"},
-            {"name": "Resolution",        "position": 1.00, "act": "act_3",  "description": "Neue Normalitaet",               "tension": "low"},
-        ],
-    },
-    "save_the_cat": {
-        "name": "Save the Cat",
-        "description": "Blake Snyder's 15-Beat Sheet",
-        "beats": ["Opening Image", "Theme Stated", "Set-Up", "Catalyst", "Debate", "Break into Two",
-                  "B Story", "Fun and Games", "Midpoint", "Bad Guys Close In", "All Is Lost",
-                  "Dark Night of the Soul", "Break into Three", "Finale", "Final Image"],
-        "beat_details": [
-            {"name": "Opening Image",          "position": 0.00, "act": "act_1",  "description": "Snapshot vor der Transformation",  "tension": "low"},
-            {"name": "Theme Stated",           "position": 0.05, "act": "act_1",  "description": "Thema wird angedeutet",            "tension": "low"},
-            {"name": "Set-Up",                 "position": 0.10, "act": "act_1",  "description": "Charakter in alter Welt",          "tension": "low"},
-            {"name": "Catalyst",               "position": 0.12, "act": "act_1",  "description": "Ausloser",                         "tension": "medium"},
-            {"name": "Debate",                 "position": 0.18, "act": "act_1",  "description": "Innerer Konflikt / Zoegern",       "tension": "medium"},
-            {"name": "Break into Two",         "position": 0.25, "act": "act_2a", "description": "Entschluss: neue Welt betreten",  "tension": "medium"},
-            {"name": "B Story",                "position": 0.30, "act": "act_2a", "description": "B-Story beginnt",                 "tension": "medium"},
-            {"name": "Fun and Games",          "position": 0.38, "act": "act_2a", "description": "Versprechen der Praemisse",       "tension": "medium"},
-            {"name": "Midpoint",               "position": 0.50, "act": "act_2a", "description": "Falscher Sieg / Niederlage",     "tension": "high"},
-            {"name": "Bad Guys Close In",      "position": 0.58, "act": "act_2b", "description": "Antagonisten verstaerken Druck",  "tension": "high"},
-            {"name": "All Is Lost",            "position": 0.75, "act": "act_2b", "description": "Tiefpunkt - alles verloren",     "tension": "peak"},
-            {"name": "Dark Night of the Soul", "position": 0.80, "act": "act_2b", "description": "Innere Leere vor Wandel",        "tension": "peak"},
-            {"name": "Break into Three",       "position": 0.83, "act": "act_3",  "description": "A+B Story verschmelzen",         "tension": "high"},
-            {"name": "Finale",                 "position": 0.88, "act": "act_3",  "description": "Synthese, Showdown, Finale",     "tension": "peak"},
-            {"name": "Final Image",            "position": 1.00, "act": "act_3",  "description": "Spiegelbild zu Opening Image",   "tension": "low"},
-        ],
-    },
-    "heros_journey": {
-        "name": "Heldenreise",
-        "description": "Joseph Campbell's Monomyth",
-        "beats": ["Gewoehnliche Welt", "Ruf des Abenteuers", "Weigerung", "Mentor",
-                  "Schwellenueberschreitung", "Tests und Gefaehrten", "Naehe zur tiefsten Hoehle",
-                  "Bewaehrungsprobe", "Belohnung", "Rueckweg", "Auferstehung", "Rueckkehr mit dem Elixier"],
-        "beat_details": [
-            {"name": "Gewoehnliche Welt",         "position": 0.00, "act": "act_1",  "description": "Held in vertrauter Welt",           "tension": "low"},
-            {"name": "Ruf des Abenteuers",        "position": 0.10, "act": "act_1",  "description": "Aufruf zur Veraenderung",           "tension": "low"},
-            {"name": "Weigerung",                 "position": 0.15, "act": "act_1",  "description": "Held lehnt zunaechst ab",           "tension": "medium"},
-            {"name": "Mentor",                    "position": 0.20, "act": "act_1",  "description": "Mentor gibt Hilfsmittel",           "tension": "low"},
-            {"name": "Schwellenueberschreitung",  "position": 0.25, "act": "act_2a", "description": "Eintritt in unbekannte Welt",      "tension": "medium"},
-            {"name": "Tests und Gefaehrten",      "position": 0.38, "act": "act_2a", "description": "Pruefungen, Feinde und Freunde",   "tension": "medium"},
-            {"name": "Naehe zur tiefsten Hoehle", "position": 0.50, "act": "act_2a", "description": "Vorbereitung auf groessten Kampf", "tension": "high"},
-            {"name": "Bewaehrungsprobe",          "position": 0.62, "act": "act_2b", "description": "Groesste Krise",                    "tension": "peak"},
-            {"name": "Belohnung",                 "position": 0.70, "act": "act_2b", "description": "Held ergreift Preis",              "tension": "high"},
-            {"name": "Rueckweg",                  "position": 0.78, "act": "act_3",  "description": "Rueckweg mit Konsequenzen",        "tension": "high"},
-            {"name": "Auferstehung",              "position": 0.88, "act": "act_3",  "description": "Letzte Pruefung / Transformation", "tension": "peak"},
-            {"name": "Rueckkehr mit dem Elixier", "position": 1.00, "act": "act_3",  "description": "Held kehrt veraendert zurueck",   "tension": "low"},
-        ],
-    },
-    "five_act": {
-        "name": "Fuenf-Akt-Struktur",
-        "description": "Shakespeareanische Struktur",
-        "beats": ["Exposition", "Steigende Handlung", "Hoehepunkt", "Fallende Handlung", "Katastrophe/Aufloesung"],
-        "beat_details": [
-            {"name": "Exposition",            "position": 0.00, "act": "act_1",  "description": "Einfuehrung Charaktere und Welt", "tension": "low"},
-            {"name": "Steigende Handlung",    "position": 0.25, "act": "act_2a", "description": "Komplikationen eskalieren",       "tension": "medium"},
-            {"name": "Hoehepunkt",            "position": 0.50, "act": "act_2b", "description": "Wendepunkt / Klimax",             "tension": "peak"},
-            {"name": "Fallende Handlung",     "position": 0.75, "act": "act_3",  "description": "Konsequenzen des Hoehepunkts",   "tension": "high"},
-            {"name": "Katastrophe/Aufloesung","position": 1.00, "act": "act_3",  "description": "Finale Aufloesung",              "tension": "medium"},
-        ],
-    },
-    "dan_harmon": {
-        "name": "Dan Harmon Story Circle",
-        "description": "8-Schritt-Kreisstruktur (Community/Rick & Morty)",
-        "beats": ["You", "Need", "Go", "Search", "Find", "Take", "Return", "Change"],
-        "beat_details": [
-            {"name": "You",    "position": 0.00, "act": "act_1",  "description": "Charakter in Komfortzone",             "tension": "low"},
-            {"name": "Need",   "position": 0.12, "act": "act_1",  "description": "Charakter will/braucht etwas",         "tension": "low"},
-            {"name": "Go",     "position": 0.25, "act": "act_2a", "description": "Betritt unbekannte Situation",         "tension": "medium"},
-            {"name": "Search", "position": 0.38, "act": "act_2a", "description": "Adaptiert, sucht, braucht",            "tension": "medium"},
-            {"name": "Find",   "position": 0.50, "act": "act_2a", "description": "Bekommt was er wollte",                "tension": "high"},
-            {"name": "Take",   "position": 0.62, "act": "act_2b", "description": "Zahlt einen Preis dafuer",             "tension": "peak"},
-            {"name": "Return", "position": 0.75, "act": "act_3",  "description": "Kehrt in bekannte Situation zurueck",  "tension": "high"},
-            {"name": "Change", "position": 1.00, "act": "act_3",  "description": "Ist veraendert durch die Erfahrung",   "tension": "low"},
-        ],
-    },
+    "three_act": THREE_ACT,
+    "save_the_cat": SAVE_THE_CAT,
+    "heros_journey": HEROS_JOURNEY,
+    "five_act": FIVE_ACT,
+    "dan_harmon": DAN_HARMON,
 }
 
 
 def get_framework(key: str) -> FrameworkDefinition:
-    return FRAMEWORKS.get(key, FRAMEWORKS["three_act"])
+    if key not in FRAMEWORKS:
+        available = ", ".join(sorted(FRAMEWORKS))
+        raise KeyError(f"Unknown framework key: {key!r}. Available: {available}")
+    return FRAMEWORKS[key]
 
 
-def list_frameworks() -> list[dict]:
-    return [{"key": k, "name": v["name"], "description": v["description"]} for k, v in FRAMEWORKS.items()]
+def list_frameworks() -> list[dict[str, str]]:
+    return [
+        {
+            "key": fw.key,
+            "name": fw.name,
+            "description": fw.description,
+            "version": fw.version,
+            "beat_count": str(len(fw.beats)),
+        }
+        for fw in FRAMEWORKS.values()
+    ]

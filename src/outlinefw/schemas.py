@@ -1,72 +1,217 @@
 """
-outlinefw.schemas -- Pydantic models (pure Python, no Django)
+outlinefw/src/outlinefw/schemas.py
+
+Pydantic schemas for iil-outlinefw.
 """
+
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-class OutlineNode(BaseModel):
-    """Ein einzelner Beat/Kapitel in einer Outline."""
-    order: int = 0
-    title: str
-    description: str = ""
-    beat_type: str = "chapter"
-    beat: str = ""
-    act: str = ""
-    notes: str = ""
-    emotional_arc: str = ""
-    tension_level: str = ""
-    target_words: int = 0
+class ActPhase(str, Enum):
+    ACT_1 = "act_1"
+    ACT_2A = "act_2a"
+    ACT_2B = "act_2b"
+    ACT_3 = "act_3"
+    ACT_OPEN = "act_open"
+    ACT_CLOSE = "act_close"
 
 
-class OutlineResult(BaseModel):
-    """Ergebnis einer Outline-Generierung."""
-    success: bool
-    nodes: list[OutlineNode] = Field(default_factory=list)
-    framework: str = "three_act"
-    error: str = ""
+class TensionLevel(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    PEAK = "peak"
+
+
+class GenerationStatus(str, Enum):
+    SUCCESS = "success"
+    PARTIAL = "partial"
+    PARSE_ERROR = "parse_error"
+    LLM_ERROR = "llm_error"
+    VALIDATION_ERROR = "validation_error"
+
+
+class ParseStatus(str, Enum):
+    SUCCESS = "success"
+    EMPTY = "empty"
+    MALFORMED_JSON = "malformed_json"
+    PARTIAL = "partial"
+    SCHEMA_MISMATCH = "schema_mismatch"
+
+
+class LLMQuality(int, Enum):
+    """
+    Maps to iil-aifw model routing tiers.
+    DRAFT -> cheapest/fastest. STANDARD -> balanced (default). PREMIUM -> best.
+    """
+    DRAFT = 1
+    STANDARD = 2
+    PREMIUM = 3
+
+
+class BeatDefinition(BaseModel):
+    """Single beat in a story framework."""
+
+    name: str = Field(..., min_length=1, max_length=100)
+    position: float = Field(..., ge=0.0, le=1.0)
+    act: ActPhase
+    description: str = Field(..., min_length=1, max_length=500)
+    tension: TensionLevel
+
+    @field_validator("position")
+    @classmethod
+    def position_precision(cls, v: float) -> float:
+        return round(v, 2)
+
+    model_config = {"frozen": True}
+
+
+class FrameworkDefinition(BaseModel):
+    """
+    A complete story framework with ordered beats.
+    Validates: no duplicate positions, sorted, first<=0.1, last>=0.9, no gap>MAX_GAP.
+    """
+
+    key: str = Field(..., pattern=r"^[a-z][a-z0-9_]{1,49}$")
+    name: str = Field(..., min_length=1, max_length=100)
+    description: str = Field(..., min_length=1, max_length=1000)
+    version: str = Field(default="1.0.0", pattern=r"^\d+\.\d+\.\d+$")
+    beats: list[BeatDefinition] = Field(..., min_length=2, max_length=50)
+
+    MAX_GAP: float = 0.30
+
+    @model_validator(mode="after")
+    def validate_beat_positions(self) -> "FrameworkDefinition":
+        positions = [b.position for b in self.beats]
+
+        if len(positions) != len(set(positions)):
+            dupes = [p for p in positions if positions.count(p) > 1]
+            raise ValueError(f"Framework '{self.key}': duplicate beat positions: {set(dupes)}")
+
+        sorted_positions = sorted(positions)
+        if positions != sorted_positions:
+            raise ValueError(
+                f"Framework '{self.key}': beats must be ordered by position. Got: {positions}"
+            )
+
+        if positions[0] > 0.1:
+            raise ValueError(
+                f"Framework '{self.key}': first beat position {positions[0]} > 0.1"
+            )
+        if positions[-1] < 0.9:
+            raise ValueError(
+                f"Framework '{self.key}': last beat position {positions[-1]} < 0.9"
+            )
+
+        for i in range(1, len(sorted_positions)):
+            gap = sorted_positions[i] - sorted_positions[i - 1]
+            if gap > self.MAX_GAP:
+                raise ValueError(
+                    f"Framework '{self.key}': gap of {gap:.2f} between beats "
+                    f"at {sorted_positions[i-1]} and {sorted_positions[i]} "
+                    f"exceeds MAX_GAP {self.MAX_GAP}"
+                )
+
+        return self
+
+    model_config = {"frozen": True}
 
 
 class ProjectContext(BaseModel):
-    """Projektkontext fuer LLM-Prompts (framework-agnostic)."""
-    title: str = ""
-    genre: str = ""
-    description: str = ""
-    premise: str = ""
-    logline: str = ""
-    themes: str = ""
-    target_audience: str = ""
-    target_word_count: int = 0
-    characters: list[dict] = Field(default_factory=list)
-    worlds: list[dict] = Field(default_factory=list)
+    """Input context for outline generation."""
 
-    def to_prompt_block(self) -> str:
-        parts = []
-        if self.title:
-            parts.append(f"**Titel:** {self.title}")
-        if self.genre:
-            parts.append(f"**Genre:** {self.genre}")
-        if self.description:
-            parts.append(f"**Beschreibung:** {self.description}")
-        if self.premise:
-            parts.append(f"**Premise:** {self.premise}")
-        if self.logline:
-            parts.append(f"**Logline:** {self.logline}")
-        if self.themes:
-            parts.append(f"**Themen:** {self.themes}")
-        if self.target_audience:
-            parts.append(f"**Zielgruppe:** {self.target_audience}")
-        if self.target_word_count:
-            parts.append(f"**Ziel-Woerter:** {self.target_word_count:,}")
-        if self.characters:
-            lines = ["**Charaktere:**"]
-            for c in self.characters[:5]:
-                lines.append(f"- {c.get('name','?')} ({c.get('role','supporting')}): {c.get('description','')[:100]}")
-            parts.append("\n".join(lines))
-        if self.worlds:
-            lines = ["**Welten/Settings:**"]
-            for w in self.worlds[:3]:
-                lines.append(f"- {w.get('name','?')}: {w.get('description','')[:100]}")
-            parts.append("\n".join(lines))
-        return "\n\n".join(parts) if parts else "(kein Kontext)"
+    title: str = Field(..., min_length=1, max_length=200)
+    genre: str = Field(..., min_length=1, max_length=100)
+    logline: str = Field(..., min_length=10, max_length=500)
+    protagonist: str = Field(..., min_length=1, max_length=200)
+    setting: str = Field(..., min_length=1, max_length=300)
+
+    themes: list[str] = Field(default_factory=list, max_length=10)
+    tone: str = Field(default="", max_length=100)
+    target_word_count: int | None = Field(default=None, ge=1000, le=500_000)
+    additional_notes: str = Field(default="", max_length=2000)
+    language_code: str = Field(default="de", pattern=r"^[a-z]{2}$")
+
+
+class OutlineNode(BaseModel):
+    """A single beat in the generated outline."""
+
+    beat_name: str = Field(..., min_length=1, max_length=100)
+    position: float = Field(..., ge=0.0, le=1.0)
+    act: ActPhase
+    title: str = Field(..., min_length=1, max_length=200)
+    summary: str = Field(..., min_length=10, max_length=2000)
+    tension: TensionLevel
+
+    scene_count: int | None = Field(default=None, ge=1, le=20)
+    key_events: list[str] = Field(default_factory=list, max_length=10)
+    character_arcs: dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("position")
+    @classmethod
+    def round_position(cls, v: float) -> float:
+        return round(v, 2)
+
+
+class ParseResult(BaseModel):
+    """Result of parse_nodes(). Always returned, never raises."""
+
+    status: ParseStatus
+    nodes: list[OutlineNode] = Field(default_factory=list)
+    raw_content: str = Field(default="")
+    error_message: str = Field(default="")
+    failed_nodes: list[dict[str, Any]] = Field(default_factory=list)
+
+    @property
+    def success(self) -> bool:
+        return self.status == ParseStatus.SUCCESS
+
+    @property
+    def has_nodes(self) -> bool:
+        return len(self.nodes) > 0
+
+
+class OutlineResult(BaseModel):
+    """Result of OutlineGenerator.generate(). Never raises."""
+
+    status: GenerationStatus
+    framework_key: str
+    framework_name: str
+    project_title: str
+
+    nodes: list[OutlineNode] = Field(default_factory=list)
+    error_message: str = Field(default="")
+    raw_llm_response: str = Field(default="")
+    parse_result: ParseResult | None = None
+
+    model_used: str = Field(default="")
+    generation_time_ms: int | None = None
+    total_beats: int = 0
+    generated_beats: int = 0
+
+    @property
+    def success(self) -> bool:
+        return self.status == GenerationStatus.SUCCESS
+
+    @property
+    def completion_ratio(self) -> float:
+        if self.total_beats == 0:
+            return 0.0
+        return self.generated_beats / self.total_beats
+
+    def raise_if_failed(self) -> None:
+        """Convenience for callers that want exception semantics."""
+        if not self.success:
+            raise OutlineGenerationError(
+                f"Outline generation failed [{self.status}]: {self.error_message}"
+            )
+
+
+class OutlineGenerationError(Exception):
+    """Raised by OutlineResult.raise_if_failed() only."""
+    pass
