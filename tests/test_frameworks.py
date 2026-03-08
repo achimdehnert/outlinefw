@@ -1,4 +1,5 @@
 """Tests fuer outlinefw.frameworks -- Pydantic API (v0.1.0)"""
+import pytest
 from outlinefw.frameworks import FRAMEWORKS, get_framework, list_frameworks
 
 
@@ -24,9 +25,14 @@ def test_beat_positions():
             assert beat.tension.value in ("low", "medium", "high", "peak")
 
 
-def test_get_framework_fallback():
-    fw = get_framework("nonexistent")
+def test_get_framework_known():
+    fw = get_framework("three_act")
     assert fw.name == "Drei-Akt-Struktur"
+
+
+def test_get_framework_unknown_raises():
+    with pytest.raises(KeyError):
+        get_framework("nonexistent")
 
 
 def test_list_frameworks_count():
