@@ -1,4 +1,4 @@
-"""Tests fuer outlinefw.frameworks"""
+"""Tests fuer outlinefw.frameworks -- Pydantic API (v0.1.0)"""
 from outlinefw.frameworks import FRAMEWORKS, get_framework, list_frameworks
 
 
@@ -10,26 +10,23 @@ def test_all_frameworks_present():
     assert "dan_harmon" in FRAMEWORKS
 
 
-def test_framework_has_required_keys():
+def test_framework_has_required_attributes():
     for key, fw in FRAMEWORKS.items():
-        assert "name" in fw
-        assert "description" in fw
-        assert "beats" in fw
-        assert "beat_details" in fw
-        assert len(fw["beats"]) > 0
-        assert len(fw["beat_details"]) > 0
+        assert fw.name
+        assert fw.description
+        assert len(fw.beats) > 0
 
 
-def test_beat_details_positions():
+def test_beat_positions():
     for key, fw in FRAMEWORKS.items():
-        for beat in fw["beat_details"]:
-            assert 0.0 <= beat["position"] <= 1.0
-            assert beat["tension"] in ("low", "medium", "high", "peak")
+        for beat in fw.beats:
+            assert 0.0 <= beat.position <= 1.0
+            assert beat.tension.value in ("low", "medium", "high", "peak")
 
 
 def test_get_framework_fallback():
     fw = get_framework("nonexistent")
-    assert fw["name"] == "Drei-Akt-Struktur"
+    assert fw.name == "Drei-Akt-Struktur"
 
 
 def test_list_frameworks_count():
