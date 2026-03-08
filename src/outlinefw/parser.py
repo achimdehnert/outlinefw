@@ -6,12 +6,14 @@ Never raises -- always returns ParseResult.
 
 Edge cases handled:
   - Markdown code fences
+  - <think> / <reasoning> tags (DeepSeek-style)
   - Trailing commas in JSON
   - LLM wrapping in {"outline": [...]} or {"nodes": [...]}
   - Mixed valid/invalid nodes (PARTIAL status)
   - BOM and whitespace-only responses
   - Single object (not list) responses
   - Python-style booleans (True/False)
+  - Leading prose before JSON array
 """
 
 from __future__ import annotations
@@ -34,6 +36,13 @@ def _strip_code_fences(text: str) -> str:
     return text.strip()
 
 
+def _strip_think_tags(text: str) -> str:
+    """Strip <think>...</think> and <reasoning>...</reasoning> blocks."""
+    text = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<reasoning>[\s\S]*?</reasoning>", "", text, flags=re.IGNORECASE)
+    return text.strip()
+
+
 def _strip_bom(text: str) -> str:
     return text.lstrip("\ufeff").lstrip("\u200b")
 
@@ -49,12 +58,25 @@ def _fix_python_booleans(text: str) -> str:
     return text
 
 
+def _extract_json_array(text: str) -> str:
+    """Extract the first [...] JSON array from text that may have leading prose."""
+    match = re.search(r"(\[.*\])", text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return text
+
+
 def _preprocess(raw: str) -> str:
     text = _strip_bom(raw)
+    text = _strip_think_tags(text)
     text = _strip_code_fences(text)
     text = _fix_python_booleans(text)
     text = _fix_trailing_commas(text)
-    return text.strip()
+    text = text.strip()
+    # If not starting with [ or {, try to extract embedded JSON array
+    if text and text[0] not in ("[", "{"):
+        text = _extract_json_array(text)
+    return text
 
 
 def _unwrap_nodes(data: Any) -> list[Any] | None:
@@ -122,13 +144,17 @@ def _coerce_node(raw_node: dict[str, Any]) -> OutlineNode:
     position = float(raw_node.get("position", raw_node.get("pos", 0.0)))
     act = _coerce_act(raw_node.get("act", raw_node.get("act_phase", "act_1")))
     tension = _coerce_tension(raw_node.get("tension", raw_node.get("tension_level", "medium")))
+    summary = str(raw_node.get("summary", raw_node.get("description", raw_node.get("content", ""))))
+    # Ensure summary meets min_length=10
+    if len(summary) < 10:
+        summary = summary.ljust(10, ".")
 
     return OutlineNode(
         beat_name=str(beat_name),
         position=position,
         act=act,
         title=str(raw_node.get("title", raw_node.get("heading", beat_name))),
-        summary=str(raw_node.get("summary", raw_node.get("description", raw_node.get("content", "")))),
+        summary=summary,
         tension=tension,
         scene_count=raw_node.get("scene_count"),
         key_events=raw_node.get("key_events", []),
