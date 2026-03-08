@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Zentrales Story-Outline-Framework fuer alle iil-Platform-Applikationen"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 authors = [
     { name = "Achim Dehnert", email = "achim@dehnert.dev" },
 ]
@@ -17,6 +17,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Typing :: Typed",
@@ -50,7 +51,7 @@ Issues = "https://github.com/achimdehnert/outlinefw/issues"
 packages = ["src/outlinefw"]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py310"
 line-length = 100
 src = ["src"]
 
@@ -62,7 +63,7 @@ ignore = ["ANN101", "ANN102"]
 known-first-party = ["outlinefw"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 strict = true
 mypy_path = "src"
 packages = ["outlinefw"]
