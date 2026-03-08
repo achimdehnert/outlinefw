@@ -243,8 +243,16 @@ class TestParseNodes:
         assert result.status == ParseStatus.SUCCESS
 
     def test_partial_parse(self) -> None:
+        # A node with position > 1.0 triggers ValidationError in OutlineNode
         nodes = json.loads(_make_nodes_json(THREE_ACT))
-        nodes[2] = {"completely_wrong": "structure"}
+        nodes[2] = {
+            "beat_name": "bad_node",
+            "position": 99.0,  # violates ge=0.0, le=1.0
+            "act": "act_1",
+            "title": "Bad Node",
+            "summary": "This node has an invalid position that cannot be coerced.",
+            "tension": "low",
+        }
         result = parse_nodes(json.dumps(nodes))
         assert result.status == ParseStatus.PARTIAL
         assert len(result.failed_nodes) == 1
