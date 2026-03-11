@@ -56,10 +56,7 @@ def test_parse_fenced_json():
 
 
 def test_parse_with_think_tags():
-    raw = (
-        "<think>Ich analysiere die Struktur...</think>"
-        f"\n[{_NODE1}]"
-    )
+    raw = f"<think>Ich analysiere die Struktur...</think>\n[{_NODE1}]"
     result = parse_nodes(raw)
     assert result.status == ParseStatus.SUCCESS
     assert len(result.nodes) == 1

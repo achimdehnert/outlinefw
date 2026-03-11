@@ -38,9 +38,8 @@ THREE_ACT = FrameworkDefinition(
             position=0.25,
             act=ActPhase.ACT_1,
             description=(
-            "Der Protagonist trifft eine unwiderrufliche Entscheidung"
-            " und tritt in Akt 2 ein."
-        ),
+                "Der Protagonist trifft eine unwiderrufliche Entscheidung und tritt in Akt 2 ein."
+            ),
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
@@ -285,8 +284,7 @@ FIVE_ACT = FrameworkDefinition(
     key="five_act",
     name="Fuenf-Akt-Struktur (Shakespeare)",
     description=(
-        "Gustav Freytags Pyramide. 5 Akte: Exposition,"
-        " Steigerung, Klimax, Wendung, Katastrophe."
+        "Gustav Freytags Pyramide. 5 Akte: Exposition, Steigerung, Klimax, Wendung, Katastrophe."
     ),
     version="1.0.0",
     beats=[
@@ -332,8 +330,7 @@ DAN_HARMON = FrameworkDefinition(
     key="dan_harmon",
     name="Dan Harmon Story Circle",
     description=(
-        "Dan Harmons Vereinfachung der Heldenreise"
-        " in 8 Stationen. Ideal fuer Episodenformat."
+        "Dan Harmons Vereinfachung der Heldenreise in 8 Stationen. Ideal fuer Episodenformat."
     ),
     version="1.0.0",
     beats=[
