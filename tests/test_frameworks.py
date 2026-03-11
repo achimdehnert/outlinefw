@@ -1,5 +1,7 @@
 """Tests fuer outlinefw.frameworks -- Pydantic API (v0.1.0)"""
+
 import pytest
+
 from outlinefw.frameworks import FRAMEWORKS, get_framework, list_frameworks
 
 
@@ -12,14 +14,14 @@ def test_all_frameworks_present():
 
 
 def test_framework_has_required_attributes():
-    for key, fw in FRAMEWORKS.items():
+    for _key, fw in FRAMEWORKS.items():
         assert fw.name
         assert fw.description
         assert len(fw.beats) > 0
 
 
 def test_beat_positions():
-    for key, fw in FRAMEWORKS.items():
+    for _key, fw in FRAMEWORKS.items():
         for beat in fw.beats:
             assert 0.0 <= beat.position <= 1.0
             assert beat.tension.value in ("low", "medium", "high", "peak")

@@ -29,11 +29,13 @@ logger = logging.getLogger(__name__)
 
 class LLMRouterError(Exception):
     """Raised by LLMRouter.completion() on unrecoverable failure."""
+
     pass
 
 
 class LLMRouterTimeout(LLMRouterError):
     """Raised when LLM call exceeds the allowed timeout."""
+
     pass
 
 
@@ -76,7 +78,7 @@ Jedes Beat-Objekt muss folgende Felder enthalten:
 
 def _build_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
     beats_overview = "\n".join(
-        f"  {i+1}. [{b.position:.2f}] {b.name}: {b.description}"
+        f"  {i + 1}. [{b.position:.2f}] {b.name}: {b.description}"
         for i, b in enumerate(framework.beats)
     )
     themes_str = ", ".join(context.themes) if context.themes else "nicht spezifiziert"
@@ -93,7 +95,7 @@ Projekt-Kontext:
 - Protagonist: {context.protagonist}
 - Setting: {context.setting}
 - Themen: {themes_str}
-- Ton: {context.tone or 'nicht spezifiziert'}
+- Ton: {context.tone or "nicht spezifiziert"}
 - Ausgabesprache: {context.language_code}
 
 Erstelle jetzt das vollstaendige JSON-Array mit allen {len(framework.beats)} Beats.
@@ -159,8 +161,10 @@ class OutlineGenerator:
             logger.warning("LLM timeout: %s", e)
             return OutlineResult(
                 status=GenerationStatus.LLM_ERROR,
-                framework_key=framework_key, framework_name=framework.name,
-                project_title=context.title, error_message=f"LLM timeout: {e}",
+                framework_key=framework_key,
+                framework_name=framework.name,
+                project_title=context.title,
+                error_message=f"LLM timeout: {e}",
                 total_beats=len(framework.beats),
                 generation_time_ms=int(time.time() * 1000) - start_ms,
             )
@@ -168,8 +172,10 @@ class OutlineGenerator:
             logger.error("LLM error: %s", e)
             return OutlineResult(
                 status=GenerationStatus.LLM_ERROR,
-                framework_key=framework_key, framework_name=framework.name,
-                project_title=context.title, error_message=str(e),
+                framework_key=framework_key,
+                framework_name=framework.name,
+                project_title=context.title,
+                error_message=str(e),
                 total_beats=len(framework.beats),
                 generation_time_ms=int(time.time() * 1000) - start_ms,
             )
@@ -188,12 +194,33 @@ class OutlineGenerator:
         }
 
         if parse_result.status == ParseStatus.SUCCESS:
-            return OutlineResult(status=GenerationStatus.SUCCESS, nodes=parse_result.nodes, generated_beats=len(parse_result.nodes), **base)
+            return OutlineResult(
+                status=GenerationStatus.SUCCESS,
+                nodes=parse_result.nodes,
+                generated_beats=len(parse_result.nodes),
+                **base,
+            )
 
         if parse_result.status == ParseStatus.PARTIAL:
-            return OutlineResult(status=GenerationStatus.PARTIAL, nodes=parse_result.nodes, generated_beats=len(parse_result.nodes), error_message=parse_result.error_message, **base)
+            return OutlineResult(
+                status=GenerationStatus.PARTIAL,
+                nodes=parse_result.nodes,
+                generated_beats=len(parse_result.nodes),
+                error_message=parse_result.error_message,
+                **base,
+            )
 
         if parse_result.status == ParseStatus.EMPTY:
-            return OutlineResult(status=GenerationStatus.PARSE_ERROR, error_message=f"LLM returned empty response: {parse_result.error_message}", generated_beats=0, **base)
+            return OutlineResult(
+                status=GenerationStatus.PARSE_ERROR,
+                error_message=f"LLM returned empty response: {parse_result.error_message}",
+                generated_beats=0,
+                **base,
+            )
 
-        return OutlineResult(status=GenerationStatus.PARSE_ERROR, error_message=parse_result.error_message, generated_beats=0, **base)
+        return OutlineResult(
+            status=GenerationStatus.PARSE_ERROR,
+            error_message=parse_result.error_message,
+            generated_beats=0,
+            **base,
+        )

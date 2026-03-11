@@ -84,7 +84,9 @@ class InMemoryOutlineService(OutlineServiceBase):
     def get_tenant_id(self, request: Any) -> int:
         return self._tenant_id
 
-    def persist_outline(self, result: OutlineResult, context: ProjectContext, tenant_id: int) -> dict[str, Any]:
+    def persist_outline(
+        self, result: OutlineResult, context: ProjectContext, tenant_id: int
+    ) -> dict[str, Any]:
         record = {
             "framework_key": result.framework_key,
             "title": context.title,

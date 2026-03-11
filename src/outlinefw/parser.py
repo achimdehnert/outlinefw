@@ -94,19 +94,34 @@ def _unwrap_nodes(data: Any) -> list[Any] | None:
 
 
 _ACT_ALIASES: dict[str, ActPhase] = {
-    "act1": ActPhase.ACT_1, "act_1": ActPhase.ACT_1, "act 1": ActPhase.ACT_1,
-    "act2a": ActPhase.ACT_2A, "act_2a": ActPhase.ACT_2A, "act 2a": ActPhase.ACT_2A,
-    "act2b": ActPhase.ACT_2B, "act_2b": ActPhase.ACT_2B, "act 2b": ActPhase.ACT_2B,
-    "act3": ActPhase.ACT_3, "act_3": ActPhase.ACT_3, "act 3": ActPhase.ACT_3,
-    "open": ActPhase.ACT_OPEN, "act_open": ActPhase.ACT_OPEN,
-    "close": ActPhase.ACT_CLOSE, "act_close": ActPhase.ACT_CLOSE,
-    "act2": ActPhase.ACT_2A, "act 2": ActPhase.ACT_2A,
+    "act1": ActPhase.ACT_1,
+    "act_1": ActPhase.ACT_1,
+    "act 1": ActPhase.ACT_1,
+    "act2a": ActPhase.ACT_2A,
+    "act_2a": ActPhase.ACT_2A,
+    "act 2a": ActPhase.ACT_2A,
+    "act2b": ActPhase.ACT_2B,
+    "act_2b": ActPhase.ACT_2B,
+    "act 2b": ActPhase.ACT_2B,
+    "act3": ActPhase.ACT_3,
+    "act_3": ActPhase.ACT_3,
+    "act 3": ActPhase.ACT_3,
+    "open": ActPhase.ACT_OPEN,
+    "act_open": ActPhase.ACT_OPEN,
+    "close": ActPhase.ACT_CLOSE,
+    "act_close": ActPhase.ACT_CLOSE,
+    "act2": ActPhase.ACT_2A,
+    "act 2": ActPhase.ACT_2A,
 }
 
 _TENSION_ALIASES: dict[str, TensionLevel] = {
-    "low": TensionLevel.LOW, "medium": TensionLevel.MEDIUM, "med": TensionLevel.MEDIUM,
-    "high": TensionLevel.HIGH, "peak": TensionLevel.PEAK,
-    "climax": TensionLevel.PEAK, "max": TensionLevel.PEAK,
+    "low": TensionLevel.LOW,
+    "medium": TensionLevel.MEDIUM,
+    "med": TensionLevel.MEDIUM,
+    "high": TensionLevel.HIGH,
+    "peak": TensionLevel.PEAK,
+    "climax": TensionLevel.PEAK,
+    "max": TensionLevel.PEAK,
 }
 
 
@@ -138,8 +153,12 @@ def _coerce_tension(value: Any) -> TensionLevel:
 
 def _coerce_node(raw_node: dict[str, Any]) -> OutlineNode:
     beat_name = (
-        raw_node.get("beat_name") or raw_node.get("beat") or raw_node.get("beat_key")
-        or raw_node.get("name") or raw_node.get("id") or "unknown"
+        raw_node.get("beat_name")
+        or raw_node.get("beat")
+        or raw_node.get("beat_key")
+        or raw_node.get("name")
+        or raw_node.get("id")
+        or "unknown"
     )
     position = float(raw_node.get("position", raw_node.get("pos", 0.0)))
     act = _coerce_act(raw_node.get("act", raw_node.get("act_phase", "act_1")))
@@ -167,27 +186,42 @@ def parse_nodes(raw_content: str) -> ParseResult:
     Parse LLM response into OutlineNodes. Always returns ParseResult, never raises.
     """
     if not raw_content or not raw_content.strip():
-        return ParseResult(status=ParseStatus.EMPTY, raw_content=raw_content, error_message="LLM returned empty response")
+        return ParseResult(
+            status=ParseStatus.EMPTY,
+            raw_content=raw_content,
+            error_message="LLM returned empty response",
+        )
 
     preprocessed = _preprocess(raw_content)
     if not preprocessed:
-        return ParseResult(status=ParseStatus.EMPTY, raw_content=raw_content, error_message="Response empty after preprocessing")
+        return ParseResult(
+            status=ParseStatus.EMPTY,
+            raw_content=raw_content,
+            error_message="Response empty after preprocessing",
+        )
 
     try:
         data = json.loads(preprocessed)
     except json.JSONDecodeError as e:
         logger.warning("JSON parse failed: %s (first 200: %r)", e, preprocessed[:200])
-        return ParseResult(status=ParseStatus.MALFORMED_JSON, raw_content=raw_content, error_message=f"JSON parse error: {e}")
+        return ParseResult(
+            status=ParseStatus.MALFORMED_JSON,
+            raw_content=raw_content,
+            error_message=f"JSON parse error: {e}",
+        )
 
     node_list = _unwrap_nodes(data)
     if node_list is None:
         return ParseResult(
-            status=ParseStatus.SCHEMA_MISMATCH, raw_content=raw_content,
+            status=ParseStatus.SCHEMA_MISMATCH,
+            raw_content=raw_content,
             error_message=f"Could not find node list. Top-level type: {type(data).__name__}",
         )
 
     if len(node_list) == 0:
-        return ParseResult(status=ParseStatus.EMPTY, raw_content=raw_content, error_message="Node list was empty")
+        return ParseResult(
+            status=ParseStatus.EMPTY, raw_content=raw_content, error_message="Node list was empty"
+        )
 
     nodes: list[OutlineNode] = []
     failed_nodes: list[dict[str, Any]] = []
@@ -204,15 +238,20 @@ def parse_nodes(raw_content: str) -> ParseResult:
 
     if not nodes and failed_nodes:
         return ParseResult(
-            status=ParseStatus.SCHEMA_MISMATCH, raw_content=raw_content,
-            failed_nodes=failed_nodes, error_message=f"All {len(failed_nodes)} nodes failed coercion",
+            status=ParseStatus.SCHEMA_MISMATCH,
+            raw_content=raw_content,
+            failed_nodes=failed_nodes,
+            error_message=f"All {len(failed_nodes)} nodes failed coercion",
         )
 
     if failed_nodes:
         logger.warning("Partial parse: %d nodes OK, %d failed", len(nodes), len(failed_nodes))
         return ParseResult(
-            status=ParseStatus.PARTIAL, nodes=nodes, raw_content=raw_content,
-            failed_nodes=failed_nodes, error_message=f"{len(failed_nodes)} of {len(node_list)} nodes failed",
+            status=ParseStatus.PARTIAL,
+            nodes=nodes,
+            raw_content=raw_content,
+            failed_nodes=failed_nodes,
+            error_message=f"{len(failed_nodes)} of {len(node_list)} nodes failed",
         )
 
     return ParseResult(status=ParseStatus.SUCCESS, nodes=nodes, raw_content=raw_content)

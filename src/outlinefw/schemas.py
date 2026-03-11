@@ -49,6 +49,7 @@ class LLMQuality(int, Enum):
     Maps to iil-aifw model routing tiers.
     DRAFT -> cheapest/fastest. STANDARD -> balanced (default). PREMIUM -> best.
     """
+
     DRAFT = 1
     STANDARD = 2
     PREMIUM = 3
@@ -86,7 +87,7 @@ class FrameworkDefinition(BaseModel):
     MAX_GAP: float = 0.30
 
     @model_validator(mode="after")
-    def validate_beat_positions(self) -> "FrameworkDefinition":
+    def validate_beat_positions(self) -> FrameworkDefinition:
         positions = [b.position for b in self.beats]
 
         if len(positions) != len(set(positions)):
@@ -100,20 +101,16 @@ class FrameworkDefinition(BaseModel):
             )
 
         if positions[0] > 0.1:
-            raise ValueError(
-                f"Framework '{self.key}': first beat position {positions[0]} > 0.1"
-            )
+            raise ValueError(f"Framework '{self.key}': first beat position {positions[0]} > 0.1")
         if positions[-1] < 0.9:
-            raise ValueError(
-                f"Framework '{self.key}': last beat position {positions[-1]} < 0.9"
-            )
+            raise ValueError(f"Framework '{self.key}': last beat position {positions[-1]} < 0.9")
 
         for i in range(1, len(sorted_positions)):
             gap = sorted_positions[i] - sorted_positions[i - 1]
             if gap > self.MAX_GAP:
                 raise ValueError(
                     f"Framework '{self.key}': gap of {gap:.2f} between beats "
-                    f"at {sorted_positions[i-1]} and {sorted_positions[i]} "
+                    f"at {sorted_positions[i - 1]} and {sorted_positions[i]} "
                     f"exceeds MAX_GAP {self.MAX_GAP}"
                 )
 
@@ -214,4 +211,5 @@ class OutlineResult(BaseModel):
 
 class OutlineGenerationError(Exception):
     """Raised by OutlineResult.raise_if_failed() only."""
+
     pass
