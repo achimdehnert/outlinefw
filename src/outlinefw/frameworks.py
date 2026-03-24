@@ -421,3 +421,28 @@ def list_frameworks() -> list[dict[str, str]]:
         }
         for fw in FRAMEWORKS.values()
     ]
+
+
+def register_framework(framework: FrameworkDefinition) -> None:
+    """Register a custom framework in the global registry.
+
+    Raises ValueError if the key already exists.
+    The framework is validated by Pydantic on construction.
+    """
+    if framework.key in FRAMEWORKS:
+        raise ValueError(
+            f"Framework key {framework.key!r} already registered. "
+            f"Use unregister_framework() first to replace it."
+        )
+    FRAMEWORKS[framework.key] = framework
+
+
+def unregister_framework(key: str) -> FrameworkDefinition:
+    """Remove a framework from the global registry.
+
+    Returns the removed framework. Raises KeyError if not found.
+    """
+    if key not in FRAMEWORKS:
+        available = ", ".join(sorted(FRAMEWORKS))
+        raise KeyError(f"Unknown framework key: {key!r}. Available: {available}")
+    return FRAMEWORKS.pop(key)

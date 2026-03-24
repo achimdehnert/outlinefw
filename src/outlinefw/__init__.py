@@ -10,8 +10,22 @@ Stable API (semantic versioning: breaking changes -> MAJOR bump):
   Frameworks: FRAMEWORKS, get_framework, list_frameworks
 """
 
-from outlinefw.frameworks import FRAMEWORKS, FrameworkDefinition, get_framework, list_frameworks
-from outlinefw.generator import LLMRouter, LLMRouterError, LLMRouterTimeout, OutlineGenerator
+from outlinefw.export import to_dict, to_json, to_markdown
+from outlinefw.frameworks import (
+    FRAMEWORKS,
+    FrameworkDefinition,
+    get_framework,
+    list_frameworks,
+    register_framework,
+    unregister_framework,
+)
+from outlinefw.generator import (
+    AsyncLLMRouter,
+    LLMRouter,
+    LLMRouterError,
+    LLMRouterTimeout,
+    OutlineGenerator,
+)
 from outlinefw.parser import parse_nodes
 from outlinefw.schemas import (
     ActPhase,
@@ -27,13 +41,15 @@ from outlinefw.schemas import (
     TensionLevel,
 )
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 __all__ = [
     # Framework Registry
     "FRAMEWORKS",
     # Enums
     "ActPhase",
+    # LLM Router Protocols
+    "AsyncLLMRouter",
     "BeatDefinition",
     "FrameworkDefinition",
     "GenerationStatus",
@@ -41,18 +57,24 @@ __all__ = [
     "LLMRouter",
     "LLMRouterError",
     "LLMRouterTimeout",
-    "OutlineGenerationError",
     # Core Generation
+    "OutlineGenerationError",
     "OutlineGenerator",
     "OutlineNode",
     "OutlineResult",
     "ParseResult",
     "ParseStatus",
-    # Schemas
     "ProjectContext",
     "TensionLevel",
+    # Version
     "__version__",
     "get_framework",
     "list_frameworks",
     "parse_nodes",
+    "register_framework",
+    # Export
+    "to_dict",
+    "to_json",
+    "to_markdown",
+    "unregister_framework",
 ]

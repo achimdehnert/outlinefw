@@ -5,6 +5,7 @@ OutlineGenerator -- orchestrates LLM call + parse_nodes().
 Always returns OutlineResult, never raises.
 
 LLMRouter Protocol: anything implementing completion() is compatible.
+AsyncLLMRouter Protocol: async variant with acompletion().
 """
 
 from __future__ import annotations
@@ -59,6 +60,22 @@ class LLMRouter(Protocol):
     ) -> str: ...
 
 
+@runtime_checkable
+class AsyncLLMRouter(Protocol):
+    """
+    Async structural protocol for LLM routing.
+    Compatible with iil-aifw async routers.
+    """
+
+    async def acompletion(
+        self,
+        action_code: str,
+        messages: list[dict[str, str]],
+        quality: LLMQuality = LLMQuality.STANDARD,
+        priority: str = "balanced",
+    ) -> str: ...
+
+
 _SYSTEM_PROMPT = """\
 Du bist ein professioneller Story-Struktur-Assistent.
 Erstelle eine vollstaendige Story-Outline im angegebenen Framework.
@@ -103,22 +120,102 @@ Jeder Beat muss konkret auf diese spezifische Geschichte zugeschnitten sein.
 """
 
 
+def _build_result(
+    raw_response: str,
+    framework_key: str,
+    framework: FrameworkDefinition,
+    context: ProjectContext,
+    start_ms: int,
+) -> OutlineResult:
+    """Parse raw LLM response and build OutlineResult.
+
+    Shared by sync and async paths.
+    """
+    parse_result = parse_nodes(raw_response)
+    elapsed_ms = int(time.time() * 1000) - start_ms
+
+    base: dict[str, Any] = {
+        "framework_key": framework_key,
+        "framework_name": framework.name,
+        "project_title": context.title,
+        "raw_llm_response": raw_response,
+        "parse_result": parse_result,
+        "total_beats": len(framework.beats),
+        "generation_time_ms": elapsed_ms,
+    }
+
+    if parse_result.status == ParseStatus.SUCCESS:
+        return OutlineResult(
+            status=GenerationStatus.SUCCESS,
+            nodes=parse_result.nodes,
+            generated_beats=len(parse_result.nodes),
+            **base,
+        )
+
+    if parse_result.status == ParseStatus.PARTIAL:
+        return OutlineResult(
+            status=GenerationStatus.PARTIAL,
+            nodes=parse_result.nodes,
+            generated_beats=len(parse_result.nodes),
+            error_message=parse_result.error_message,
+            **base,
+        )
+
+    if parse_result.status == ParseStatus.EMPTY:
+        return OutlineResult(
+            status=GenerationStatus.PARSE_ERROR,
+            error_message=f"LLM returned empty response: {parse_result.error_message}",
+            generated_beats=0,
+            **base,
+        )
+
+    return OutlineResult(
+        status=GenerationStatus.PARSE_ERROR,
+        error_message=parse_result.error_message,
+        generated_beats=0,
+        **base,
+    )
+
+
+def _error_result(
+    status: GenerationStatus,
+    framework_key: str,
+    framework_name: str,
+    project_title: str,
+    error_message: str,
+    total_beats: int,
+    start_ms: int,
+) -> OutlineResult:
+    """Build error OutlineResult."""
+    return OutlineResult(
+        status=status,
+        framework_key=framework_key,
+        framework_name=framework_name,
+        project_title=project_title,
+        error_message=error_message,
+        total_beats=total_beats,
+        generation_time_ms=int(time.time() * 1000) - start_ms,
+    )
+
+
 class OutlineGenerator:
     """
     Generates story outlines by calling an LLMRouter and parsing the response.
 
-    Usage:
+    Usage (sync):
         generator = OutlineGenerator(router=my_aifw_router)
-        result = generator.generate(framework_key="save_the_cat", context=ProjectContext(...))
-        if result.success:
-            for node in result.nodes:
-                print(node.title)
+        result = generator.generate("save_the_cat", context=ProjectContext(...))
+
+    Usage (async):
+        generator = OutlineGenerator(router=my_async_router)
+        result = await generator.agenerate(framework_key="save_the_cat", context=ctx)
     """
 
-    def __init__(self, router: LLMRouter) -> None:
-        if not isinstance(router, LLMRouter):
+    def __init__(self, router: LLMRouter | AsyncLLMRouter) -> None:
+        if not isinstance(router, (LLMRouter, AsyncLLMRouter)):
             raise TypeError(
-                f"router must implement the LLMRouter Protocol. Got: {type(router).__name__}"
+                f"router must implement LLMRouter or AsyncLLMRouter Protocol. "
+                f"Got: {type(router).__name__}"
             )
         self._router = router
 
@@ -130,18 +227,22 @@ class OutlineGenerator:
         priority: str = "balanced",
     ) -> OutlineResult:
         """Generate a complete outline. Always returns OutlineResult, never raises."""
+        if not isinstance(self._router, LLMRouter):
+            raise TypeError("Sync generate() requires a router implementing LLMRouter.completion()")
+
         start_ms = int(time.time() * 1000)
 
         try:
             framework = get_framework(framework_key)
         except KeyError as e:
-            return OutlineResult(
-                status=GenerationStatus.VALIDATION_ERROR,
-                framework_key=framework_key,
-                framework_name="",
-                project_title=context.title,
-                error_message=str(e),
-                total_beats=0,
+            return _error_result(
+                GenerationStatus.VALIDATION_ERROR,
+                framework_key,
+                "",
+                context.title,
+                str(e),
+                0,
+                start_ms,
             )
 
         messages = [
@@ -149,7 +250,6 @@ class OutlineGenerator:
             {"role": "user", "content": _build_user_prompt(framework, context)},
         ]
 
-        raw_response = ""
         try:
             raw_response = self._router.completion(
                 action_code="outline.generate",
@@ -159,68 +259,90 @@ class OutlineGenerator:
             )
         except LLMRouterTimeout as e:
             logger.warning("LLM timeout: %s", e)
-            return OutlineResult(
-                status=GenerationStatus.LLM_ERROR,
-                framework_key=framework_key,
-                framework_name=framework.name,
-                project_title=context.title,
-                error_message=f"LLM timeout: {e}",
-                total_beats=len(framework.beats),
-                generation_time_ms=int(time.time() * 1000) - start_ms,
+            return _error_result(
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                f"LLM timeout: {e}",
+                len(framework.beats),
+                start_ms,
             )
         except LLMRouterError as e:
             logger.error("LLM error: %s", e)
-            return OutlineResult(
-                status=GenerationStatus.LLM_ERROR,
-                framework_key=framework_key,
-                framework_name=framework.name,
-                project_title=context.title,
-                error_message=str(e),
-                total_beats=len(framework.beats),
-                generation_time_ms=int(time.time() * 1000) - start_ms,
+            return _error_result(
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                str(e),
+                len(framework.beats),
+                start_ms,
             )
 
-        parse_result = parse_nodes(raw_response)
-        elapsed_ms = int(time.time() * 1000) - start_ms
+        return _build_result(raw_response, framework_key, framework, context, start_ms)
 
-        base: dict[str, Any] = {
-            "framework_key": framework_key,
-            "framework_name": framework.name,
-            "project_title": context.title,
-            "raw_llm_response": raw_response,
-            "parse_result": parse_result,
-            "total_beats": len(framework.beats),
-            "generation_time_ms": elapsed_ms,
-        }
-
-        if parse_result.status == ParseStatus.SUCCESS:
-            return OutlineResult(
-                status=GenerationStatus.SUCCESS,
-                nodes=parse_result.nodes,
-                generated_beats=len(parse_result.nodes),
-                **base,
+    async def agenerate(
+        self,
+        framework_key: str,
+        context: ProjectContext,
+        quality: LLMQuality = LLMQuality.STANDARD,
+        priority: str = "balanced",
+    ) -> OutlineResult:
+        """Async variant of generate(). Requires router with acompletion()."""
+        if not isinstance(self._router, AsyncLLMRouter):
+            raise TypeError(
+                "Async agenerate() requires a router implementing AsyncLLMRouter.acompletion()"
             )
 
-        if parse_result.status == ParseStatus.PARTIAL:
-            return OutlineResult(
-                status=GenerationStatus.PARTIAL,
-                nodes=parse_result.nodes,
-                generated_beats=len(parse_result.nodes),
-                error_message=parse_result.error_message,
-                **base,
+        start_ms = int(time.time() * 1000)
+
+        try:
+            framework = get_framework(framework_key)
+        except KeyError as e:
+            return _error_result(
+                GenerationStatus.VALIDATION_ERROR,
+                framework_key,
+                "",
+                context.title,
+                str(e),
+                0,
+                start_ms,
             )
 
-        if parse_result.status == ParseStatus.EMPTY:
-            return OutlineResult(
-                status=GenerationStatus.PARSE_ERROR,
-                error_message=f"LLM returned empty response: {parse_result.error_message}",
-                generated_beats=0,
-                **base,
+        messages = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": _build_user_prompt(framework, context)},
+        ]
+
+        try:
+            raw_response = await self._router.acompletion(
+                action_code="outline.generate",
+                messages=messages,
+                quality=quality,
+                priority=priority,
+            )
+        except LLMRouterTimeout as e:
+            logger.warning("LLM timeout (async): %s", e)
+            return _error_result(
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                f"LLM timeout: {e}",
+                len(framework.beats),
+                start_ms,
+            )
+        except LLMRouterError as e:
+            logger.error("LLM error (async): %s", e)
+            return _error_result(
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                str(e),
+                len(framework.beats),
+                start_ms,
             )
 
-        return OutlineResult(
-            status=GenerationStatus.PARSE_ERROR,
-            error_message=parse_result.error_message,
-            generated_beats=0,
-            **base,
-        )
+        return _build_result(raw_response, framework_key, framework, context, start_ms)
