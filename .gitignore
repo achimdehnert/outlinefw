@@ -6,3 +6,6 @@ build/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# IDE agent workflows (symlinked, not repo-specific)
+.windsurf/
