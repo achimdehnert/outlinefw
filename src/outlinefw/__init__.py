@@ -7,7 +7,7 @@ Stable API (semantic versioning: breaking changes -> MAJOR bump):
   Schemas:    ProjectContext, OutlineNode, OutlineResult, ParseResult
   Generator:  OutlineGenerator, LLMRouter, LLMRouterError, LLMRouterTimeout
   Parser:     parse_nodes
-  Frameworks: FRAMEWORKS, get_framework, list_frameworks
+  Frameworks: FRAMEWORKS, get_framework, list_frameworks, register_framework
 """
 
 from outlinefw.export import to_dict, to_json, to_markdown
@@ -41,7 +41,7 @@ from outlinefw.schemas import (
     TensionLevel,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.1"
 
 __all__ = [
     # Framework Registry
