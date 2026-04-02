@@ -1,11 +1,14 @@
 """
 outlinefw/src/outlinefw/frameworks.py
 
-Complete, versioned story and document framework definitions for iil-outlinefw.
-All frameworks validated on import via FrameworkDefinition (Pydantic).
+Framework definitions for iil-outlinefw.
+Each framework defines: structure (beats), content_mode, and llm_instructions.
 
-Fiction frameworks: three_act, save_the_cat, heros_journey, five_act, dan_harmon
-Non-Fiction frameworks: scientific_essay, academic_essay, imrad_article, essay
+llm_instructions give the LLM domain-specific guidance that is appended
+to the user prompt at generation time (ADR-001).
+
+Fiction:     three_act, save_the_cat, heros_journey, five_act, dan_harmon
+Non-Fiction: scientific_essay, academic_essay, imrad_article, essay
 """
 
 from __future__ import annotations
@@ -25,6 +28,11 @@ THREE_ACT = FrameworkDefinition(
         "Akt 3: Klimax und Aufloesung."
     ),
     version="1.0.0",
+    llm_instructions=(
+        "Sorge fuer einen konsistenten Charakter-Bogen des Protagonisten ueber alle drei Akte. "
+        "Jeder Beat muss kausal aus dem vorherigen folgen. "
+        "Der Midpoint muss eine echte Verschiebung in der Zielsetzung des Protagonisten erzeugen."
+    ),
     beats=[
         BeatDefinition(
             name="exposition",
@@ -44,16 +52,14 @@ THREE_ACT = FrameworkDefinition(
             name="first_turning_point",
             position=0.25,
             act=ActPhase.ACT_1,
-            description=(
-                "Der Protagonist trifft eine unwiderrufliche Entscheidung und tritt in Akt 2 ein."
-            ),
+            description="Der Protagonist trifft eine unwiderrufliche Entscheidung und tritt in Akt 2 ein.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="midpoint",
             position=0.50,
             act=ActPhase.ACT_2A,
-            description="Falsche Niederlage oder falscher Sieg.",
+            description="Falsche Niederlage oder falscher Sieg. Zielsetzung des Protagonisten verschiebt sich.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
@@ -74,7 +80,7 @@ THREE_ACT = FrameworkDefinition(
             name="resolution",
             position=1.0,
             act=ActPhase.ACT_3,
-            description="Die neue Normalitaet.",
+            description="Die neue Normalitaet nach der Transformation.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -85,6 +91,11 @@ SAVE_THE_CAT = FrameworkDefinition(
     name="Save the Cat (Blake Snyder)",
     description="Blake Snyders 15-Beat-Sheet fuer kommerziell erfolgreiche Drehbuecher.",
     version="1.0.0",
+    llm_instructions=(
+        "Halte dich strikt an Snyders Seitenzahlen-Proportionen (Catalyst bei ca. 12%, "
+        "Break into Two bei 25%, Midpoint bei 50%, All is Lost bei 75%, Finale bei 92%). "
+        "Fun and Games muss die Praemisse des Films einloesen, nicht nur Handlung beschreiben."
+    ),
     beats=[
         BeatDefinition(
             name="opening_image",
@@ -132,7 +143,7 @@ SAVE_THE_CAT = FrameworkDefinition(
             name="b_story",
             position=0.30,
             act=ActPhase.ACT_2A,
-            description="Einfuehrung der B-Story.",
+            description="Einfuehrung der B-Story (oft der Liebes-/Lernstrang).",
             tension=TensionLevel.LOW,
         ),
         BeatDefinition(
@@ -160,35 +171,35 @@ SAVE_THE_CAT = FrameworkDefinition(
             name="all_is_lost",
             position=0.75,
             act=ActPhase.ACT_2B,
-            description="Das Gegenteil von Akt-2-Einstieg.",
+            description="Das Gegenteil von Akt-2-Einstieg. Alles ist verloren.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="dark_night_of_the_soul",
             position=0.80,
             act=ActPhase.ACT_2B,
-            description="Der tiefste Moment.",
+            description="Der tiefste Moment. Innere Einkehr.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="break_into_three",
             position=0.85,
             act=ActPhase.ACT_3,
-            description="A- und B-Story konvergieren.",
+            description="A- und B-Story konvergieren zur Loesung.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="finale",
             position=0.92,
             act=ActPhase.ACT_3,
-            description="Der Protagonist stuermt die Burg.",
+            description="Der Protagonist stuermt die Burg. Alle fuenf Punkte des Finales.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="final_image",
             position=1.0,
             act=ActPhase.ACT_3,
-            description="Spiegel zum Opening Image.",
+            description="Spiegel zum Opening Image — zeigt die Transformation.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -199,6 +210,11 @@ HEROS_JOURNEY = FrameworkDefinition(
     name="Heldenreise (Joseph Campbell)",
     description="Joseph Campbells Monomythos. 12 Stationen der transformativen Reise des Helden.",
     version="1.0.0",
+    llm_instructions=(
+        "Die Transformation des Helden muss psychologisch glaubwuerdig sein. "
+        "Der Mentor darf nicht zu viel loesen — der Held muss selbst wachsen. "
+        "Das Elixier in der letzten Station muss eine greifbare innere Veraenderung repraesentieren."
+    ),
     beats=[
         BeatDefinition(
             name="ordinary_world",
@@ -225,63 +241,63 @@ HEROS_JOURNEY = FrameworkDefinition(
             name="meeting_the_mentor",
             position=0.22,
             act=ActPhase.ACT_1,
-            description="Der Mentor erscheint.",
+            description="Der Mentor erscheint und gibt dem Helden Werkzeuge/Weisheit.",
             tension=TensionLevel.LOW,
         ),
         BeatDefinition(
             name="crossing_the_threshold",
             position=0.28,
             act=ActPhase.ACT_2A,
-            description="Der Held betritt die besondere Welt.",
+            description="Der Held betritt die besondere Welt. Kein Zurueck.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="tests_allies_enemies",
             position=0.38,
             act=ActPhase.ACT_2A,
-            description="Der Held wird getestet.",
+            description="Der Held wird getestet, findet Verbündete und Feinde.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="approach_to_inmost_cave",
             position=0.48,
             act=ActPhase.ACT_2A,
-            description="Annaeherung an das Heiligtum.",
+            description="Annaeherung an das zentrale Heiligtum/den Kern des Problems.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="ordeal",
             position=0.55,
             act=ActPhase.ACT_2B,
-            description="Die zentrale Krise.",
+            description="Die zentrale Krise. Der Held konfrontiert seinen groessten Feind/Angst.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="reward",
             position=0.65,
             act=ActPhase.ACT_2B,
-            description="Der Held ueberlebt und gewinnt den Preis.",
+            description="Der Held ueberlebt und gewinnt den Preis (auesserlich und innerlich).",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="road_back",
             position=0.75,
             act=ActPhase.ACT_3,
-            description="Aufbruch zur Heimreise.",
+            description="Aufbruch zur Heimreise. Neue Bedrohung entsteht.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="resurrection",
             position=0.88,
             act=ActPhase.ACT_3,
-            description="Zweite Krise. Letzte Transformation.",
+            description="Zweite, finale Krise. Letzte und vollstaendige Transformation.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="return_with_elixir",
             position=1.0,
             act=ActPhase.ACT_3,
-            description="Heimkehr mit dem Elixier.",
+            description="Heimkehr mit dem Elixier — Weisheit, Schatz oder Heilung fuer die Gemeinschaft.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -289,11 +305,14 @@ HEROS_JOURNEY = FrameworkDefinition(
 
 FIVE_ACT = FrameworkDefinition(
     key="five_act",
-    name="Fuenf-Akt-Struktur (Shakespeare)",
-    description=(
-        "Gustav Freytags Pyramide. 5 Akte: Exposition, Steigerung, Klimax, Wendung, Katastrophe."
-    ),
+    name="Fuenf-Akt-Struktur (Shakespeare/Freytag)",
+    description="Gustav Freytags Pyramide. 5 Akte: Exposition, Steigerung, Klimax, Wendung, Katastrophe.",
     version="1.0.0",
+    llm_instructions=(
+        "Die Steigerung muss durch konkrete Ereignisse getrieben sein, nicht nur durch Emotionen. "
+        "Der Klimax muss der dramatische Hoehepunkt sein, von dem alles abfaellt. "
+        "Denouement zeigt die neue Ordnung der Welt nach dem dramatischen Bruch."
+    ),
     beats=[
         BeatDefinition(
             name="exposition",
@@ -306,28 +325,28 @@ FIVE_ACT = FrameworkDefinition(
             name="rising_action",
             position=0.22,
             act=ActPhase.ACT_2A,
-            description="Zunehmende Komplikationen.",
+            description="Zunehmende Komplikationen. Spannungssteigerung durch Ereignisse.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="climax",
             position=0.50,
             act=ActPhase.ACT_2B,
-            description="Wendepunkt. Der entscheidende Moment.",
+            description="Wendepunkt. Der entscheidende Moment. Hoehepunkt der Spannung.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="falling_action",
             position=0.72,
             act=ActPhase.ACT_3,
-            description="Die Konsequenzen des Klimax.",
+            description="Die Konsequenzen des Klimax. Spannungsabfall.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="denouement",
             position=1.0,
             act=ActPhase.ACT_3,
-            description="Katastrophe oder Apotheose. Finale Ordnung.",
+            description="Katastrophe oder Apotheose. Finale Ordnung der Welt.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -336,10 +355,13 @@ FIVE_ACT = FrameworkDefinition(
 DAN_HARMON = FrameworkDefinition(
     key="dan_harmon",
     name="Dan Harmon Story Circle",
-    description=(
-        "Dan Harmons Vereinfachung der Heldenreise in 8 Stationen. Ideal fuer Episodenformat."
-    ),
+    description="Dan Harmons Vereinfachung der Heldenreise in 8 Stationen. Ideal fuer Episodenformat.",
     version="1.0.0",
+    llm_instructions=(
+        "Der Circle muss sich schliessen: die Figur kehrt zurueck, aber veraendert. "
+        "'Find' und 'Take' muessen emotional unterschiedliche Qualitaeten haben. "
+        "Ideal fuer episodisches Erzaehlen: jede Episode kann einen eigenen Circle haben."
+    ),
     beats=[
         BeatDefinition(
             name="you",
@@ -366,35 +388,35 @@ DAN_HARMON = FrameworkDefinition(
             name="search",
             position=0.38,
             act=ActPhase.ACT_2A,
-            description="Suche nach dem Ziel.",
+            description="Suche nach dem Ziel. Hindernisse und Entscheidungen.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="find",
             position=0.50,
             act=ActPhase.ACT_2B,
-            description="Die Figur findet, was sie gesucht hat.",
+            description="Die Figur findet, was sie gesucht hat — aber zu einem Preis.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="take",
             position=0.63,
             act=ActPhase.ACT_2B,
-            description="Das Gefundene wird genommen.",
+            description="Das Gefundene wird genommen/bezahlt. Die Konsequenz trifft ein.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="return",
             position=0.75,
             act=ActPhase.ACT_3,
-            description="Rueckkehr in die vertraute Welt.",
+            description="Rueckkehr in die vertraute Welt mit dem Gewonnenen.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="change",
             position=1.0,
             act=ActPhase.ACT_3,
-            description="Die Figur hat sich veraendert.",
+            description="Die Figur und/oder die Welt haben sich veraendert.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -409,59 +431,66 @@ SCIENTIFIC_ESSAY = FrameworkDefinition(
     key="scientific_essay",
     name="Wissenschaftlicher Aufsatz",
     description=(
-        "Argumentativ-hermeneutischer Zeitschriftenartikel oder Buchbeitrag. "
-        "Typisch fuer Geistes- und Sozialwissenschaften."
+        "Argumentativ-hermeneutischer Aufsatz fuer Fachzeitschriften, Sammelbände oder "
+        "Qualifikationsarbeiten in Geistes- und Sozialwissenschaften."
     ),
     version="1.0.0",
     content_mode="nonfiction",
+    llm_instructions=(
+        "Keine Romandramaturgie. Jeder Abschnitt muss eine klar definierte wissenschaftliche "
+        "Funktion haben (Framing, Forschungsstand, Analyse, Synthese, Kritik). "
+        "Die These aus der Einleitung muss im Fazit explizit beantwortet werden. "
+        "Argumente muessen evidenzbasiert sein (Quellen, Fallbeispiele, Theorien). "
+        "Der Forschungsstand muss die Forschungsluecke benennen, die der Aufsatz schliesst."
+    ),
     beats=[
         BeatDefinition(
             name="einleitung",
             position=0.0,
             act=ActPhase.ACT_OPEN,
-            description="These, Problemstellung, Relevanz und Aufbau des Aufsatzes.",
+            description="These, Problemstellung, wissenschaftliche Relevanz und Aufbau des Aufsatzes.",
             tension=TensionLevel.LOW,
         ),
         BeatDefinition(
             name="forschungsstand",
             position=0.15,
             act=ActPhase.ACT_1,
-            description="Einordnung in bestehende Forschung, Forschungsluecke benennen.",
+            description="Einordnung in bestehende Literatur, Forschungsluecke benennen.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="theoretischer_rahmen",
             position=0.28,
             act=ActPhase.ACT_1,
-            description="Theoretische Grundlagen und Schluesselkonzepte erlaeutern.",
+            description="Theoretische Grundlagen, Schluesselkonzepte und analytisches Instrumentarium.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="hauptargument_1",
             position=0.45,
             act=ActPhase.ACT_2A,
-            description="Erstes zentrales Argument mit Belegen und Analyse.",
+            description="Erstes zentrales Argument mit Belegen, Beispielen und Analyse.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="hauptargument_2",
             position=0.62,
             act=ActPhase.ACT_2B,
-            description="Zweites zentrales Argument, vertieft oder kontrastierend.",
+            description="Zweites zentrales Argument, vertiefend oder kontrastierend zum ersten.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="diskussion",
             position=0.78,
             act=ActPhase.ACT_3,
-            description="Kritische Wuerdigung, Gegenargumente, Grenzen der Analyse.",
+            description="Kritische Wuerdigung, Gegenargumente, Grenzen der Analyse, Implikationen.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="fazit",
             position=1.0,
             act=ActPhase.ACT_CLOSE,
-            description="Zusammenfassung, Beantwortung der These, Ausblick.",
+            description="These beantworten, Erkenntnisse zusammenfassen, weiteren Forschungsbedarf benennen.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -471,10 +500,17 @@ ACADEMIC_ESSAY = FrameworkDefinition(
     key="academic_essay",
     name="Akademischer Essay",
     description=(
-        "Strukturierter argumentativer Essay fuer Hochschulseminare und Qualifikationsarbeiten."
+        "Strukturierter argumentativer Essay fuer Hochschulseminare, Pruefungsleistungen "
+        "und Qualifikationsarbeiten auf Bachelor-/Masterniveau."
     ),
     version="1.0.0",
     content_mode="nonfiction",
+    llm_instructions=(
+        "Klare Thesenstruktur: eine Hauptthese, die durch alle Abschnitte bewiesen wird. "
+        "Der Hintergrundabschnitt darf keine eigene Argumentation enthalten — nur Kontext setzen. "
+        "Gegenargumente muessen ernst genommen und differenziert widerlegt oder integriert werden. "
+        "Schluss muss ueber blosse Zusammenfassung hinausgehen: Was bedeutet das fuer das Feld?"
+    ),
     beats=[
         BeatDefinition(
             name="einleitung",
@@ -487,28 +523,28 @@ ACADEMIC_ESSAY = FrameworkDefinition(
             name="hintergrund",
             position=0.18,
             act=ActPhase.ACT_1,
-            description="Kontext, Grundbegriffe und notwendiges Vorwissen klären.",
+            description="Kontext, Grundbegriffe und notwendiges Vorwissen klaeren — ohne Eigenwertung.",
             tension=TensionLevel.LOW,
         ),
         BeatDefinition(
             name="hauptteil",
             position=0.40,
             act=ActPhase.ACT_2A,
-            description="Kernargumente entfalten, Belege anführen, Analyse vertiefen.",
+            description="Kernargumente entfalten, Belege anfuehren, Analyse vertiefen.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="gegenargumente",
             position=0.70,
             act=ActPhase.ACT_2B,
-            description="Gegenpositionen darstellen und widerlegen oder integrieren.",
+            description="Gegenpositionen darstellen und differenziert widerlegen oder produktiv integrieren.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="schluss",
             position=1.0,
             act=ActPhase.ACT_CLOSE,
-            description="These bestaetigen, Erkenntnisse zusammenfassen, Ausblick geben.",
+            description="These bestaetigen, Erkenntnisse wuerdigen, Ausblick auf Implikationen geben.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -519,51 +555,57 @@ IMRAD_ARTICLE = FrameworkDefinition(
     name="IMRaD-Artikel (empirisch)",
     description=(
         "Empirischer Forschungsartikel nach IMRaD-Standard. "
-        "Typisch fuer Natur-, Ingenieur- und Sozialwissenschaften."
+        "Typisch fuer Natur-, Ingenieur- und empirische Sozialwissenschaften."
     ),
     version="1.0.0",
     content_mode="nonfiction",
+    llm_instructions=(
+        "Strikte IMRaD-Trennung einhalten: Results KEIN Interpretation, Discussion KEINE neuen Daten. "
+        "Methods muss so detailliert sein, dass die Studie repliziert werden koennte. "
+        "Der Abstract muss eigenstaendig lesbar sein (Ziel, Methode, Ergebnis, Schlussfolgerung). "
+        "Hypothesen aus der Introduction muessen in Results und Discussion explizit adressiert werden."
+    ),
     beats=[
         BeatDefinition(
             name="abstract",
             position=0.0,
             act=ActPhase.ACT_OPEN,
-            description="Kurzzusammenfassung: Ziel, Methode, Ergebnisse, Schlussfolgerung.",
+            description="Eigenstaendige Kurzzusammenfassung: Ziel, Methode, Ergebnisse, Schlussfolgerung.",
             tension=TensionLevel.LOW,
         ),
         BeatDefinition(
             name="introduction",
             position=0.10,
             act=ActPhase.ACT_1,
-            description="Forschungsfrage, Forschungsstand, Ziel und Hypothesen.",
+            description="Forschungsfrage, Forschungsstand, Ziel der Studie und Hypothesen.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="methods",
             position=0.28,
             act=ActPhase.ACT_2A,
-            description="Forschungsdesign, Datenerhebung, Auswertungsverfahren.",
+            description="Forschungsdesign, Stichprobe, Datenerhebung, Auswertungsverfahren.",
             tension=TensionLevel.LOW,
         ),
         BeatDefinition(
             name="results",
             position=0.50,
             act=ActPhase.ACT_2A,
-            description="Darstellung der Ergebnisse ohne Interpretation.",
+            description="Darstellung der Ergebnisse ohne Interpretation. Tabellen, Grafiken, Befunde.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="discussion",
             position=0.72,
             act=ActPhase.ACT_2B,
-            description="Interpretation, Einordnung, Limitations, Implikationen.",
+            description="Interpretation, Einordnung in Literatur, Limitations, Implikationen.",
             tension=TensionLevel.PEAK,
         ),
         BeatDefinition(
             name="conclusion",
             position=1.0,
             act=ActPhase.ACT_CLOSE,
-            description="Hauptbefunde, Beitrag zum Feld, weiterer Forschungsbedarf.",
+            description="Hauptbefunde zusammenfassen, Beitrag zum Feld benennen, weiteren Forschungsbedarf.",
             tension=TensionLevel.LOW,
         ),
     ],
@@ -573,44 +615,51 @@ ESSAY = FrameworkDefinition(
     key="essay",
     name="Essay (literarisch-reflexiv)",
     description=(
-        "Freier, reflexiver Essay fuer Feuilleton, Magazin oder literarische Zeitschriften."
+        "Freier, reflexiver Essay fuer Feuilleton, Kulturmagazine oder literarische Zeitschriften. "
+        "Denkerisch und subjektiv, aber argumentativ stringent."
     ),
     version="1.0.0",
     content_mode="nonfiction",
+    llm_instructions=(
+        "Persoenliche Stimme und subjektive Perspektive sind Qualitaetsmerkmale des Essays, keine Fehler. "
+        "Assoziative Verbindungen zwischen Ideen sind erwuenscht, muessen aber einem roten Faden folgen. "
+        "Die Wende muss die Ausgangsperspektive echte verschieben oder in Frage stellen. "
+        "Schluss darf offen bleiben — gute Essays stellen Fragen, die im Leser nachhallen."
+    ),
     beats=[
         BeatDefinition(
             name="einstieg",
             position=0.0,
             act=ActPhase.ACT_OPEN,
-            description="Anekdote, Zitat oder provokante Frage als Einstieg.",
+            description="Anekdote, Zitat, provokante Beobachtung oder Frage als Einstieg.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="entfaltung",
             position=0.22,
             act=ActPhase.ACT_1,
-            description="Thema entfalten, assoziativ und persoenlich.",
+            description="Thema entfalten — assoziativ, persoenlich, mit Bezug zur eigenen Perspektive.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="vertiefung",
             position=0.50,
             act=ActPhase.ACT_2A,
-            description="Kerngedanke vertiefen, Beispiele und Referenzen einflechten.",
+            description="Kerngedanke vertiefen, Beispiele und Referenzen organisch einflechten.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="wende",
             position=0.75,
             act=ActPhase.ACT_2B,
-            description="Unerwartete Wendung oder Gegenposition, die das Thema neu beleuchtet.",
+            description="Unerwartete Wendung, Gegenposition oder Selbstwiderlegung beleuchtet das Thema neu.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="schluss",
             position=1.0,
             act=ActPhase.ACT_CLOSE,
-            description="Offene oder pointierte Schlussreflexion.",
+            description="Offene oder pointierte Schlussreflexion — keine blossen Zusammenfassungen.",
             tension=TensionLevel.MEDIUM,
         ),
     ],
@@ -658,11 +707,7 @@ def list_frameworks() -> list[dict[str, str]]:
 
 
 def register_framework(framework: FrameworkDefinition) -> None:
-    """Register a custom framework in the global registry.
-
-    Raises ValueError if the key already exists.
-    The framework is validated by Pydantic on construction.
-    """
+    """Register a custom framework. Raises ValueError if key already exists."""
     if framework.key in FRAMEWORKS:
         raise ValueError(
             f"Framework key {framework.key!r} already registered. "
@@ -672,10 +717,7 @@ def register_framework(framework: FrameworkDefinition) -> None:
 
 
 def unregister_framework(key: str) -> FrameworkDefinition:
-    """Remove a framework from the global registry.
-
-    Returns the removed framework. Raises KeyError if not found.
-    """
+    """Remove a framework. Returns it. Raises KeyError if not found."""
     if key not in FRAMEWORKS:
         available = ", ".join(sorted(FRAMEWORKS))
         raise KeyError(f"Unknown framework key: {key!r}. Available: {available}")

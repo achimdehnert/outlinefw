@@ -56,7 +56,7 @@ class LLMQuality(int, Enum):
 
 
 class BeatDefinition(BaseModel):
-    """Single beat in a story or document framework."""
+    """Single beat/section in a framework."""
 
     name: str = Field(..., min_length=1, max_length=100)
     position: float = Field(..., ge=0.0, le=1.0)
@@ -75,15 +75,23 @@ class BeatDefinition(BaseModel):
 class FrameworkDefinition(BaseModel):
     """
     A complete story or document framework with ordered beats.
-    Validates: no duplicate positions, sorted, first<=0.1, last>=0.9, no gap>MAX_GAP.
 
     content_mode:
-        - "fiction"    : narrative frameworks (novel, screenplay, etc.) — default
-        - "nonfiction" : academic/scientific frameworks (essay, article, thesis, etc.)
+        "fiction"    -- narrative frameworks (novel, screenplay, etc.)
+        "nonfiction" -- academic/scientific frameworks (essay, article, thesis, etc.)
+
+    llm_instructions:
+        Optional per-framework guidance appended to the LLM user prompt.
+        Use this to give the LLM domain-specific instructions, quality criteria,
+        stylistic constraints, or any context that improves output for THIS framework.
+        Examples:
+          - "Verwende keine Dramaturgie-Konzepte. Jeder Abschnitt muss eine klare
+             Forschungsfunktion erfullen (Framing, Analyse, Synthese)."
+          - "Protagonist-Bogen muss ueber alle Akte konsistent sein."
 
     system_prompt:
-        Optional override for the LLM system prompt.
-        If None, the default prompt for the content_mode is used.
+        Optional full system prompt override. If None, the default unified
+        system prompt is used (recommended).
     """
 
     key: str = Field(..., pattern=r"^[a-z][a-z0-9_]{1,49}$")
@@ -92,6 +100,7 @@ class FrameworkDefinition(BaseModel):
     version: str = Field(default="1.0.0", pattern=r"^\d+\.\d+\.\d+$")
     beats: list[BeatDefinition] = Field(..., min_length=2, max_length=50)
     content_mode: Literal["fiction", "nonfiction"] = "fiction"
+    llm_instructions: str = Field(default="", max_length=2000)
     system_prompt: str | None = Field(default=None, max_length=4000)
 
     MAX_GAP: float = 0.30
@@ -130,10 +139,12 @@ class FrameworkDefinition(BaseModel):
 
 
 class ProjectContext(BaseModel):
-    """Input context for outline generation.
+    """Full project context for outline generation.
 
-    Fiction fields (protagonist, setting) are optional to support non-fiction content.
-    For non-fiction use research_question instead of logline when appropriate.
+    All fields are available in prompt templates.
+    Fiction fields (protagonist, setting) are optional to support non-fiction.
+    Non-fiction fields (research_question, methodology) are optional.
+    Use additional_notes to inject any extra context (author style, audience, etc.).
     """
 
     title: str = Field(..., min_length=1, max_length=200)
@@ -156,7 +167,7 @@ class ProjectContext(BaseModel):
 
 
 class OutlineNode(BaseModel):
-    """A single beat in the generated outline."""
+    """A single beat/section in the generated outline."""
 
     beat_name: str = Field(..., min_length=1, max_length=100)
     position: float = Field(..., ge=0.0, le=1.0)

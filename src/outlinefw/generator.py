@@ -4,8 +4,13 @@ outlinefw/src/outlinefw/generator.py
 OutlineGenerator -- orchestrates LLM call + parse_nodes().
 Always returns OutlineResult, never raises.
 
-LLMRouter Protocol: anything implementing completion() is compatible.
-AsyncLLMRouter Protocol: async variant with acompletion().
+Prompt Architecture (ADR-001):
+  One unified system prompt. User prompt is built dynamically from:
+    1. Framework structure (beats overview from FrameworkDefinition)
+    2. Full ProjectContext (all non-empty fields injected)
+    3. Framework-specific instructions (FrameworkDefinition.llm_instructions)
+  content_mode routes to the appropriate context labeling (fiction vs. nonfiction)
+  but does NOT restrict which fields are available.
 """
 
 from __future__ import annotations
@@ -45,10 +50,6 @@ class LLMRouter(Protocol):
     """
     Structural protocol for LLM routing.
     Compatible with iil-aifw and any custom router.
-
-    Raises:
-        LLMRouterError   -- on any unrecoverable LLM failure
-        LLMRouterTimeout -- on timeout
     """
 
     def completion(
@@ -62,10 +63,7 @@ class LLMRouter(Protocol):
 
 @runtime_checkable
 class AsyncLLMRouter(Protocol):
-    """
-    Async structural protocol for LLM routing.
-    Compatible with iil-aifw async routers.
-    """
+    """Async structural protocol for LLM routing."""
 
     async def acompletion(
         self,
@@ -76,123 +74,115 @@ class AsyncLLMRouter(Protocol):
     ) -> str: ...
 
 
-# --- Fiction System Prompt ---
+# Single unified system prompt — content-type agnostic
+_SYSTEM_PROMPT = """\
+Du bist ein professioneller Outline-Assistent fuer alle Textformate.
+Du erstellst strukturierte Gliederungen fuer Romane, Sachbuecher, wissenschaftliche Arbeiten,
+Essays, Drehbuecher und alle anderen Textformen.
+Antworte AUSSCHLIESSLICH mit einem JSON-Array. Kein Text davor oder danach.
 
-_FICTION_SYSTEM_PROMPT = """\
-Du bist ein professioneller Story-Struktur-Assistent.
-Erstelle eine vollstaendige Story-Outline im angegebenen Framework.
-Antworte AUSSCHLIESSLICH mit einem JSON-Array von Beat-Objekten.
-Kein erklaerende Text, kein Markdown ausser dem JSON selbst.
-
-Jedes Beat-Objekt muss folgende Felder enthalten:
-- beat_name: string (Framework-Beat-Identifier)
+Jedes Objekt im Array muss diese Felder enthalten:
+- beat_name: string (Identifier aus dem Framework)
 - position: float (0.0 bis 1.0)
-- act: string (act_1 | act_2a | act_2b | act_3)
-- title: string (praegnanter Titel fuer diesen Beat)
-- summary: string (150-300 Zeichen, konkreter Inhalt fuer diese Geschichte)
+- act: string (act_1 | act_2a | act_2b | act_3 | act_open | act_close)
+- title: string (praegnanter Titel fuer diesen Abschnitt)
+- summary: string (150-300 Zeichen, konkreter Inhalt fuer dieses spezifische Dokument)
 - tension: string (low | medium | high | peak)
-- key_events: array of strings (2-4 konkrete Ereignisse)
+- key_events: array of strings (2-4 konkrete Punkte/Ereignisse/Argumente)
 """
 
-# Legacy alias for backward compatibility
-_SYSTEM_PROMPT = _FICTION_SYSTEM_PROMPT
-
-# --- Non-Fiction System Prompt ---
-
-_NONFICTION_SYSTEM_PROMPT = """\
-Du bist ein professioneller Experte fuer akademisches und wissenschaftliches Schreiben.
-Erstelle eine vollstaendige Gliederung im angegebenen Format.
-Antworte AUSSCHLIESSLICH mit einem JSON-Array von Abschnitt-Objekten.
-Kein erklaerende Text, kein Markdown ausser dem JSON selbst.
-
-Jedes Abschnitt-Objekt muss folgende Felder enthalten:
-- beat_name: string (Abschnitts-Identifier aus dem Framework)
-- position: float (0.0 bis 1.0)
-- act: string (act_open | act_1 | act_2a | act_2b | act_3 | act_close)
-- title: string (praegnanter Abschnittstitel)
-- summary: string (150-300 Zeichen, konkreter Inhalt fuer diesen Abschnitt)
-- tension: string (low | medium | high | peak) -- steht fuer argumentative Intensitaet
-- key_events: array of strings (2-4 konkrete Punkte/Argumente/Inhalte dieses Abschnitts)
-"""
+# Legacy alias
+_FICTION_SYSTEM_PROMPT = _SYSTEM_PROMPT
+_NONFICTION_SYSTEM_PROMPT = _SYSTEM_PROMPT
 
 
-def _build_fiction_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
-    """Build user prompt for fiction frameworks."""
+def _format_context_block(framework: FrameworkDefinition, context: ProjectContext) -> str:
+    """Build a complete context block from ALL available ProjectContext fields.
+
+    Every non-empty field is included so the LLM has maximum information.
+    Labels adapt to content_mode for natural language fit.
+    """
+    is_nonfiction = framework.content_mode == "nonfiction"
+    lines: list[str] = []
+
+    lines.append(f"- Titel: {context.title}")
+    lines.append(f"- Format/Genre: {context.genre}")
+
+    if is_nonfiction:
+        lines.append(f"- Kernaussage/These: {context.logline}")
+    else:
+        lines.append(f"- Logline: {context.logline}")
+
+    if context.research_question:
+        lines.append(f"- Forschungsfrage: {context.research_question}")
+    if context.methodology:
+        lines.append(f"- Methodik/Ansatz: {context.methodology}")
+
+    if not is_nonfiction:
+        if context.protagonist:
+            lines.append(f"- Protagonist: {context.protagonist}")
+        if context.setting:
+            lines.append(f"- Setting: {context.setting}")
+
+    if context.themes:
+        lines.append(f"- Themen: {', '.join(context.themes)}")
+    if context.tone:
+        lines.append(f"- Ton/Stil: {context.tone}")
+    if context.target_word_count:
+        lines.append(f"- Zielumfang: ca. {context.target_word_count:,} Woerter")
+    if context.additional_notes:
+        lines.append(f"- Weitere Hinweise: {context.additional_notes}")
+
+    lines.append(f"- Ausgabesprache: {context.language_code}")
+    return "\n".join(lines)
+
+
+def _build_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
+    """Build a fully dynamic user prompt from framework structure + full context.
+
+    Uses ALL available ProjectContext fields. Framework-specific instructions
+    (llm_instructions) are appended last for maximum influence.
+    """
     beats_overview = "\n".join(
         f"  {i + 1}. [{b.position:.2f}] {b.name}: {b.description}"
         for i, b in enumerate(framework.beats)
     )
-    themes_str = ", ".join(context.themes) if context.themes else "nicht spezifiziert"
-    protagonist = context.protagonist or "Protagonist"
-    setting = context.setting or "nicht spezifiziert"
-    return f"""\
-Framework: {framework.name} ({len(framework.beats)} Beats)
+    context_block = _format_context_block(framework, context)
 
-Beats in Reihenfolge:
+    section_label = "Abschnitte" if framework.content_mode == "nonfiction" else "Beats"
+
+    prompt = f"""\
+Format/Framework: {framework.name}
+Beschreibung: {framework.description}
+
+{section_label} in Reihenfolge:
 {beats_overview}
 
 Projekt-Kontext:
-- Titel: {context.title}
-- Genre: {context.genre}
-- Logline: {context.logline}
-- Protagonist: {protagonist}
-- Setting: {setting}
-- Themen: {themes_str}
-- Ton: {context.tone or "nicht spezifiziert"}
-- Ausgabesprache: {context.language_code}
+{context_block}
 
-Erstelle jetzt das vollstaendige JSON-Array mit allen {len(framework.beats)} Beats.
-Jeder Beat muss konkret auf diese spezifische Geschichte zugeschnitten sein.
+Erstelle jetzt das vollstaendige JSON-Array mit allen {len(framework.beats)} {section_label}.
+Jeder Eintrag muss konkret auf dieses spezifische Dokument zugeschnitten sein.
 """
 
+    if framework.llm_instructions:
+        prompt += f"\nSpezifische Anforderungen fuer dieses Format:\n{framework.llm_instructions}\n"
 
-def _build_nonfiction_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
-    """Build user prompt for non-fiction frameworks (essay, article, thesis, etc.)."""
-    sections_overview = "\n".join(
-        f"  {i + 1}. [{b.position:.2f}] {b.name}: {b.description}"
-        for i, b in enumerate(framework.beats)
-    )
-    themes_str = ", ".join(context.themes) if context.themes else "nicht spezifiziert"
-    return f"""\
-Format: {framework.name} ({len(framework.beats)} Abschnitte)
-Beschreibung: {framework.description}
-
-Abschnitte in Reihenfolge:
-{sections_overview}
-
-Dokument-Kontext:
-- Titel: {context.title}
-- Typ/Genre: {context.genre}
-- Kernaussage/Logline: {context.logline}
-{f"- Forschungsfrage: {context.research_question}" if context.research_question else ""}
-{f"- Methodik: {context.methodology}" if context.methodology else ""}
-- Themen: {themes_str}
-- Ausgabesprache: {context.language_code}
-{f"- Zusaetzliche Hinweise: {context.additional_notes}" if context.additional_notes else ""}
-
-Erstelle jetzt das vollstaendige JSON-Array mit allen {len(framework.beats)} Abschnitten.
-Jeder Abschnitt muss konkret auf dieses spezifische Dokument zugeschnitten sein.
-Verwende keine Romandramaturgie-Konzepte (kein Protagonist, kein Cliffhanger, kein Plot-Twist).
-"""
-
-
-def _build_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
-    """Route to the appropriate prompt builder based on framework content_mode."""
-    if framework.content_mode == "nonfiction":
-        return _build_nonfiction_user_prompt(framework, context)
-    return _build_fiction_user_prompt(framework, context)
+    return prompt
 
 
 def _get_system_prompt(framework: FrameworkDefinition) -> str:
-    """Return the system prompt for this framework.
+    """Return system prompt: framework override > unified default."""
+    return framework.system_prompt or _SYSTEM_PROMPT
 
-    Priority: framework.system_prompt > content_mode default.
-    """
-    if framework.system_prompt:
-        return framework.system_prompt
-    if framework.content_mode == "nonfiction":
-        return _NONFICTION_SYSTEM_PROMPT
-    return _FICTION_SYSTEM_PROMPT
+
+# Legacy helpers (backward compat)
+def _build_fiction_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
+    return _build_user_prompt(framework, context)
+
+
+def _build_nonfiction_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
+    return _build_user_prompt(framework, context)
 
 
 def _build_result(
@@ -202,10 +192,7 @@ def _build_result(
     context: ProjectContext,
     start_ms: int,
 ) -> OutlineResult:
-    """Parse raw LLM response and build OutlineResult.
-
-    Shared by sync and async paths.
-    """
+    """Parse raw LLM response and build OutlineResult."""
     parse_result = parse_nodes(raw_response)
     elapsed_ms = int(time.time() * 1000) - start_ms
 
@@ -226,7 +213,6 @@ def _build_result(
             generated_beats=len(parse_result.nodes),
             **base,
         )
-
     if parse_result.status == ParseStatus.PARTIAL:
         return OutlineResult(
             status=GenerationStatus.PARTIAL,
@@ -235,7 +221,6 @@ def _build_result(
             error_message=parse_result.error_message,
             **base,
         )
-
     if parse_result.status == ParseStatus.EMPTY:
         return OutlineResult(
             status=GenerationStatus.PARSE_ERROR,
@@ -243,7 +228,6 @@ def _build_result(
             generated_beats=0,
             **base,
         )
-
     return OutlineResult(
         status=GenerationStatus.PARSE_ERROR,
         error_message=parse_result.error_message,
@@ -261,7 +245,6 @@ def _error_result(
     total_beats: int,
     start_ms: int,
 ) -> OutlineResult:
-    """Build error OutlineResult."""
     return OutlineResult(
         status=status,
         framework_key=framework_key,
@@ -275,19 +258,16 @@ def _error_result(
 
 class OutlineGenerator:
     """
-    Generates story and document outlines by calling an LLMRouter and parsing the response.
+    Generates outlines for any text format by calling an LLMRouter and parsing the response.
 
-    Usage (sync, fiction):
-        generator = OutlineGenerator(router=my_aifw_router)
-        result = generator.generate("save_the_cat", context=ProjectContext(...))
+    The prompt is built dynamically from:
+    - FrameworkDefinition (structure, beats, llm_instructions)
+    - ProjectContext (all available fields)
 
-    Usage (sync, non-fiction):
-        generator = OutlineGenerator(router=my_aifw_router)
+    Usage:
+        generator = OutlineGenerator(router=my_router)
         result = generator.generate("scientific_essay", context=ProjectContext(...))
-
-    Usage (async):
-        generator = OutlineGenerator(router=my_async_router)
-        result = await generator.agenerate(framework_key="save_the_cat", context=ctx)
+        result = generator.generate("save_the_cat", context=ProjectContext(...))
     """
 
     def __init__(self, router: LLMRouter | AsyncLLMRouter) -> None:
@@ -315,13 +295,8 @@ class OutlineGenerator:
             framework = get_framework(framework_key)
         except KeyError as e:
             return _error_result(
-                GenerationStatus.VALIDATION_ERROR,
-                framework_key,
-                "",
-                context.title,
-                str(e),
-                0,
-                start_ms,
+                GenerationStatus.VALIDATION_ERROR, framework_key, "",
+                context.title, str(e), 0, start_ms,
             )
 
         messages = [
@@ -339,24 +314,14 @@ class OutlineGenerator:
         except LLMRouterTimeout as e:
             logger.warning("LLM timeout: %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR,
-                framework_key,
-                framework.name,
-                context.title,
-                f"LLM timeout: {e}",
-                len(framework.beats),
-                start_ms,
+                GenerationStatus.LLM_ERROR, framework_key, framework.name,
+                context.title, f"LLM timeout: {e}", len(framework.beats), start_ms,
             )
         except LLMRouterError as e:
             logger.error("LLM error: %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR,
-                framework_key,
-                framework.name,
-                context.title,
-                str(e),
-                len(framework.beats),
-                start_ms,
+                GenerationStatus.LLM_ERROR, framework_key, framework.name,
+                context.title, str(e), len(framework.beats), start_ms,
             )
 
         return _build_result(raw_response, framework_key, framework, context, start_ms)
@@ -368,7 +333,7 @@ class OutlineGenerator:
         quality: LLMQuality = LLMQuality.STANDARD,
         priority: str = "balanced",
     ) -> OutlineResult:
-        """Async variant of generate(). Requires router with acompletion()."""
+        """Async variant of generate()."""
         if not isinstance(self._router, AsyncLLMRouter):
             raise TypeError(
                 "Async agenerate() requires a router implementing AsyncLLMRouter.acompletion()"
@@ -380,13 +345,8 @@ class OutlineGenerator:
             framework = get_framework(framework_key)
         except KeyError as e:
             return _error_result(
-                GenerationStatus.VALIDATION_ERROR,
-                framework_key,
-                "",
-                context.title,
-                str(e),
-                0,
-                start_ms,
+                GenerationStatus.VALIDATION_ERROR, framework_key, "",
+                context.title, str(e), 0, start_ms,
             )
 
         messages = [
@@ -404,24 +364,14 @@ class OutlineGenerator:
         except LLMRouterTimeout as e:
             logger.warning("LLM timeout (async): %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR,
-                framework_key,
-                framework.name,
-                context.title,
-                f"LLM timeout: {e}",
-                len(framework.beats),
-                start_ms,
+                GenerationStatus.LLM_ERROR, framework_key, framework.name,
+                context.title, f"LLM timeout: {e}", len(framework.beats), start_ms,
             )
         except LLMRouterError as e:
             logger.error("LLM error (async): %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR,
-                framework_key,
-                framework.name,
-                context.title,
-                str(e),
-                len(framework.beats),
-                start_ms,
+                GenerationStatus.LLM_ERROR, framework_key, framework.name,
+                context.title, str(e), len(framework.beats), start_ms,
             )
 
         return _build_result(raw_response, framework_key, framework, context, start_ms)
