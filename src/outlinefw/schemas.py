@@ -125,7 +125,7 @@ class FrameworkDefinition(BaseModel):
             raise ValueError(f"Framework '{self.key}': last beat position {positions[-1]} < 0.9")
 
         for i in range(1, len(sorted_positions)):
-            gap = sorted_positions[i] - sorted_positions[i - 1]
+            gap = round(sorted_positions[i] - sorted_positions[i - 1], 10)
             if gap > self.MAX_GAP:
                 raise ValueError(
                     f"Framework '{self.key}': gap of {gap:.2f} between beats "
