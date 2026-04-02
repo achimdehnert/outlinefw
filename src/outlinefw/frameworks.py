@@ -1,13 +1,20 @@
 """
 outlinefw/src/outlinefw/frameworks.py
 
-Complete, versioned story framework definitions for iil-outlinefw v0.1.0.
+Complete, versioned story and document framework definitions for iil-outlinefw.
 All frameworks validated on import via FrameworkDefinition (Pydantic).
+
+Fiction frameworks: three_act, save_the_cat, heros_journey, five_act, dan_harmon
+Non-Fiction frameworks: scientific_essay, academic_essay, imrad_article, essay
 """
 
 from __future__ import annotations
 
 from outlinefw.schemas import ActPhase, BeatDefinition, FrameworkDefinition, TensionLevel
+
+# =============================================================================
+# Fiction Frameworks
+# =============================================================================
 
 THREE_ACT = FrameworkDefinition(
     key="three_act",
@@ -394,12 +401,238 @@ DAN_HARMON = FrameworkDefinition(
 )
 
 
+# =============================================================================
+# Non-Fiction Frameworks
+# =============================================================================
+
+SCIENTIFIC_ESSAY = FrameworkDefinition(
+    key="scientific_essay",
+    name="Wissenschaftlicher Aufsatz",
+    description=(
+        "Argumentativ-hermeneutischer Zeitschriftenartikel oder Buchbeitrag. "
+        "Typisch fuer Geistes- und Sozialwissenschaften."
+    ),
+    version="1.0.0",
+    content_mode="nonfiction",
+    beats=[
+        BeatDefinition(
+            name="einleitung",
+            position=0.0,
+            act=ActPhase.ACT_OPEN,
+            description="These, Problemstellung, Relevanz und Aufbau des Aufsatzes.",
+            tension=TensionLevel.LOW,
+        ),
+        BeatDefinition(
+            name="forschungsstand",
+            position=0.15,
+            act=ActPhase.ACT_1,
+            description="Einordnung in bestehende Forschung, Forschungsluecke benennen.",
+            tension=TensionLevel.MEDIUM,
+        ),
+        BeatDefinition(
+            name="theoretischer_rahmen",
+            position=0.28,
+            act=ActPhase.ACT_1,
+            description="Theoretische Grundlagen und Schluesselkonzepte erlaeutern.",
+            tension=TensionLevel.MEDIUM,
+        ),
+        BeatDefinition(
+            name="hauptargument_1",
+            position=0.45,
+            act=ActPhase.ACT_2A,
+            description="Erstes zentrales Argument mit Belegen und Analyse.",
+            tension=TensionLevel.HIGH,
+        ),
+        BeatDefinition(
+            name="hauptargument_2",
+            position=0.62,
+            act=ActPhase.ACT_2B,
+            description="Zweites zentrales Argument, vertieft oder kontrastierend.",
+            tension=TensionLevel.HIGH,
+        ),
+        BeatDefinition(
+            name="diskussion",
+            position=0.78,
+            act=ActPhase.ACT_3,
+            description="Kritische Wuerdigung, Gegenargumente, Grenzen der Analyse.",
+            tension=TensionLevel.PEAK,
+        ),
+        BeatDefinition(
+            name="fazit",
+            position=1.0,
+            act=ActPhase.ACT_CLOSE,
+            description="Zusammenfassung, Beantwortung der These, Ausblick.",
+            tension=TensionLevel.LOW,
+        ),
+    ],
+)
+
+ACADEMIC_ESSAY = FrameworkDefinition(
+    key="academic_essay",
+    name="Akademischer Essay",
+    description=(
+        "Strukturierter argumentativer Essay fuer Hochschulseminare und Qualifikationsarbeiten."
+    ),
+    version="1.0.0",
+    content_mode="nonfiction",
+    beats=[
+        BeatDefinition(
+            name="einleitung",
+            position=0.0,
+            act=ActPhase.ACT_OPEN,
+            description="These formulieren, Relevanz begruenden, Gliederung ankuendigen.",
+            tension=TensionLevel.LOW,
+        ),
+        BeatDefinition(
+            name="hintergrund",
+            position=0.18,
+            act=ActPhase.ACT_1,
+            description="Kontext, Grundbegriffe und notwendiges Vorwissen klären.",
+            tension=TensionLevel.LOW,
+        ),
+        BeatDefinition(
+            name="hauptteil",
+            position=0.40,
+            act=ActPhase.ACT_2A,
+            description="Kernargumente entfalten, Belege anführen, Analyse vertiefen.",
+            tension=TensionLevel.HIGH,
+        ),
+        BeatDefinition(
+            name="gegenargumente",
+            position=0.70,
+            act=ActPhase.ACT_2B,
+            description="Gegenpositionen darstellen und widerlegen oder integrieren.",
+            tension=TensionLevel.HIGH,
+        ),
+        BeatDefinition(
+            name="schluss",
+            position=1.0,
+            act=ActPhase.ACT_CLOSE,
+            description="These bestaetigen, Erkenntnisse zusammenfassen, Ausblick geben.",
+            tension=TensionLevel.LOW,
+        ),
+    ],
+)
+
+IMRAD_ARTICLE = FrameworkDefinition(
+    key="imrad_article",
+    name="IMRaD-Artikel (empirisch)",
+    description=(
+        "Empirischer Forschungsartikel nach IMRaD-Standard. "
+        "Typisch fuer Natur-, Ingenieur- und Sozialwissenschaften."
+    ),
+    version="1.0.0",
+    content_mode="nonfiction",
+    beats=[
+        BeatDefinition(
+            name="abstract",
+            position=0.0,
+            act=ActPhase.ACT_OPEN,
+            description="Kurzzusammenfassung: Ziel, Methode, Ergebnisse, Schlussfolgerung.",
+            tension=TensionLevel.LOW,
+        ),
+        BeatDefinition(
+            name="introduction",
+            position=0.10,
+            act=ActPhase.ACT_1,
+            description="Forschungsfrage, Forschungsstand, Ziel und Hypothesen.",
+            tension=TensionLevel.MEDIUM,
+        ),
+        BeatDefinition(
+            name="methods",
+            position=0.28,
+            act=ActPhase.ACT_2A,
+            description="Forschungsdesign, Datenerhebung, Auswertungsverfahren.",
+            tension=TensionLevel.LOW,
+        ),
+        BeatDefinition(
+            name="results",
+            position=0.50,
+            act=ActPhase.ACT_2A,
+            description="Darstellung der Ergebnisse ohne Interpretation.",
+            tension=TensionLevel.HIGH,
+        ),
+        BeatDefinition(
+            name="discussion",
+            position=0.72,
+            act=ActPhase.ACT_2B,
+            description="Interpretation, Einordnung, Limitations, Implikationen.",
+            tension=TensionLevel.PEAK,
+        ),
+        BeatDefinition(
+            name="conclusion",
+            position=1.0,
+            act=ActPhase.ACT_CLOSE,
+            description="Hauptbefunde, Beitrag zum Feld, weiterer Forschungsbedarf.",
+            tension=TensionLevel.LOW,
+        ),
+    ],
+)
+
+ESSAY = FrameworkDefinition(
+    key="essay",
+    name="Essay (literarisch-reflexiv)",
+    description=(
+        "Freier, reflexiver Essay fuer Feuilleton, Magazin oder literarische Zeitschriften."
+    ),
+    version="1.0.0",
+    content_mode="nonfiction",
+    beats=[
+        BeatDefinition(
+            name="einstieg",
+            position=0.0,
+            act=ActPhase.ACT_OPEN,
+            description="Anekdote, Zitat oder provokante Frage als Einstieg.",
+            tension=TensionLevel.MEDIUM,
+        ),
+        BeatDefinition(
+            name="entfaltung",
+            position=0.22,
+            act=ActPhase.ACT_1,
+            description="Thema entfalten, assoziativ und persoenlich.",
+            tension=TensionLevel.MEDIUM,
+        ),
+        BeatDefinition(
+            name="vertiefung",
+            position=0.50,
+            act=ActPhase.ACT_2A,
+            description="Kerngedanke vertiefen, Beispiele und Referenzen einflechten.",
+            tension=TensionLevel.HIGH,
+        ),
+        BeatDefinition(
+            name="wende",
+            position=0.75,
+            act=ActPhase.ACT_2B,
+            description="Unerwartete Wendung oder Gegenposition, die das Thema neu beleuchtet.",
+            tension=TensionLevel.HIGH,
+        ),
+        BeatDefinition(
+            name="schluss",
+            position=1.0,
+            act=ActPhase.ACT_CLOSE,
+            description="Offene oder pointierte Schlussreflexion.",
+            tension=TensionLevel.MEDIUM,
+        ),
+    ],
+)
+
+
+# =============================================================================
+# Registry
+# =============================================================================
+
 FRAMEWORKS: dict[str, FrameworkDefinition] = {
+    # Fiction
     "three_act": THREE_ACT,
     "save_the_cat": SAVE_THE_CAT,
     "heros_journey": HEROS_JOURNEY,
     "five_act": FIVE_ACT,
     "dan_harmon": DAN_HARMON,
+    # Non-Fiction
+    "scientific_essay": SCIENTIFIC_ESSAY,
+    "academic_essay": ACADEMIC_ESSAY,
+    "imrad_article": IMRAD_ARTICLE,
+    "essay": ESSAY,
 }
 
 
@@ -418,6 +651,7 @@ def list_frameworks() -> list[dict[str, str]]:
             "description": fw.description,
             "version": fw.version,
             "beat_count": str(len(fw.beats)),
+            "content_mode": fw.content_mode,
         }
         for fw in FRAMEWORKS.values()
     ]

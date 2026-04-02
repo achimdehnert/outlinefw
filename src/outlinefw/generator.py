@@ -76,7 +76,9 @@ class AsyncLLMRouter(Protocol):
     ) -> str: ...
 
 
-_SYSTEM_PROMPT = """\
+# --- Fiction System Prompt ---
+
+_FICTION_SYSTEM_PROMPT = """\
 Du bist ein professioneller Story-Struktur-Assistent.
 Erstelle eine vollstaendige Story-Outline im angegebenen Framework.
 Antworte AUSSCHLIESSLICH mit einem JSON-Array von Beat-Objekten.
@@ -92,13 +94,37 @@ Jedes Beat-Objekt muss folgende Felder enthalten:
 - key_events: array of strings (2-4 konkrete Ereignisse)
 """
 
+# Legacy alias for backward compatibility
+_SYSTEM_PROMPT = _FICTION_SYSTEM_PROMPT
 
-def _build_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
+# --- Non-Fiction System Prompt ---
+
+_NONFICTION_SYSTEM_PROMPT = """\
+Du bist ein professioneller Experte fuer akademisches und wissenschaftliches Schreiben.
+Erstelle eine vollstaendige Gliederung im angegebenen Format.
+Antworte AUSSCHLIESSLICH mit einem JSON-Array von Abschnitt-Objekten.
+Kein erklaerende Text, kein Markdown ausser dem JSON selbst.
+
+Jedes Abschnitt-Objekt muss folgende Felder enthalten:
+- beat_name: string (Abschnitts-Identifier aus dem Framework)
+- position: float (0.0 bis 1.0)
+- act: string (act_open | act_1 | act_2a | act_2b | act_3 | act_close)
+- title: string (praegnanter Abschnittstitel)
+- summary: string (150-300 Zeichen, konkreter Inhalt fuer diesen Abschnitt)
+- tension: string (low | medium | high | peak) -- steht fuer argumentative Intensitaet
+- key_events: array of strings (2-4 konkrete Punkte/Argumente/Inhalte dieses Abschnitts)
+"""
+
+
+def _build_fiction_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
+    """Build user prompt for fiction frameworks."""
     beats_overview = "\n".join(
         f"  {i + 1}. [{b.position:.2f}] {b.name}: {b.description}"
         for i, b in enumerate(framework.beats)
     )
     themes_str = ", ".join(context.themes) if context.themes else "nicht spezifiziert"
+    protagonist = context.protagonist or "Protagonist"
+    setting = context.setting or "nicht spezifiziert"
     return f"""\
 Framework: {framework.name} ({len(framework.beats)} Beats)
 
@@ -109,8 +135,8 @@ Projekt-Kontext:
 - Titel: {context.title}
 - Genre: {context.genre}
 - Logline: {context.logline}
-- Protagonist: {context.protagonist}
-- Setting: {context.setting}
+- Protagonist: {protagonist}
+- Setting: {setting}
 - Themen: {themes_str}
 - Ton: {context.tone or "nicht spezifiziert"}
 - Ausgabesprache: {context.language_code}
@@ -118,6 +144,55 @@ Projekt-Kontext:
 Erstelle jetzt das vollstaendige JSON-Array mit allen {len(framework.beats)} Beats.
 Jeder Beat muss konkret auf diese spezifische Geschichte zugeschnitten sein.
 """
+
+
+def _build_nonfiction_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
+    """Build user prompt for non-fiction frameworks (essay, article, thesis, etc.)."""
+    sections_overview = "\n".join(
+        f"  {i + 1}. [{b.position:.2f}] {b.name}: {b.description}"
+        for i, b in enumerate(framework.beats)
+    )
+    themes_str = ", ".join(context.themes) if context.themes else "nicht spezifiziert"
+    return f"""\
+Format: {framework.name} ({len(framework.beats)} Abschnitte)
+Beschreibung: {framework.description}
+
+Abschnitte in Reihenfolge:
+{sections_overview}
+
+Dokument-Kontext:
+- Titel: {context.title}
+- Typ/Genre: {context.genre}
+- Kernaussage/Logline: {context.logline}
+{f"- Forschungsfrage: {context.research_question}" if context.research_question else ""}
+{f"- Methodik: {context.methodology}" if context.methodology else ""}
+- Themen: {themes_str}
+- Ausgabesprache: {context.language_code}
+{f"- Zusaetzliche Hinweise: {context.additional_notes}" if context.additional_notes else ""}
+
+Erstelle jetzt das vollstaendige JSON-Array mit allen {len(framework.beats)} Abschnitten.
+Jeder Abschnitt muss konkret auf dieses spezifische Dokument zugeschnitten sein.
+Verwende keine Romandramaturgie-Konzepte (kein Protagonist, kein Cliffhanger, kein Plot-Twist).
+"""
+
+
+def _build_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
+    """Route to the appropriate prompt builder based on framework content_mode."""
+    if framework.content_mode == "nonfiction":
+        return _build_nonfiction_user_prompt(framework, context)
+    return _build_fiction_user_prompt(framework, context)
+
+
+def _get_system_prompt(framework: FrameworkDefinition) -> str:
+    """Return the system prompt for this framework.
+
+    Priority: framework.system_prompt > content_mode default.
+    """
+    if framework.system_prompt:
+        return framework.system_prompt
+    if framework.content_mode == "nonfiction":
+        return _NONFICTION_SYSTEM_PROMPT
+    return _FICTION_SYSTEM_PROMPT
 
 
 def _build_result(
@@ -200,11 +275,15 @@ def _error_result(
 
 class OutlineGenerator:
     """
-    Generates story outlines by calling an LLMRouter and parsing the response.
+    Generates story and document outlines by calling an LLMRouter and parsing the response.
 
-    Usage (sync):
+    Usage (sync, fiction):
         generator = OutlineGenerator(router=my_aifw_router)
         result = generator.generate("save_the_cat", context=ProjectContext(...))
+
+    Usage (sync, non-fiction):
+        generator = OutlineGenerator(router=my_aifw_router)
+        result = generator.generate("scientific_essay", context=ProjectContext(...))
 
     Usage (async):
         generator = OutlineGenerator(router=my_async_router)
@@ -246,7 +325,7 @@ class OutlineGenerator:
             )
 
         messages = [
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": _get_system_prompt(framework)},
             {"role": "user", "content": _build_user_prompt(framework, context)},
         ]
 
@@ -311,7 +390,7 @@ class OutlineGenerator:
             )
 
         messages = [
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": _get_system_prompt(framework)},
             {"role": "user", "content": _build_user_prompt(framework, context)},
         ]
 

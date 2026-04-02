@@ -7,7 +7,7 @@ Pydantic schemas for iil-outlinefw.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -56,7 +56,7 @@ class LLMQuality(int, Enum):
 
 
 class BeatDefinition(BaseModel):
-    """Single beat in a story framework."""
+    """Single beat in a story or document framework."""
 
     name: str = Field(..., min_length=1, max_length=100)
     position: float = Field(..., ge=0.0, le=1.0)
@@ -74,8 +74,16 @@ class BeatDefinition(BaseModel):
 
 class FrameworkDefinition(BaseModel):
     """
-    A complete story framework with ordered beats.
+    A complete story or document framework with ordered beats.
     Validates: no duplicate positions, sorted, first<=0.1, last>=0.9, no gap>MAX_GAP.
+
+    content_mode:
+        - "fiction"    : narrative frameworks (novel, screenplay, etc.) — default
+        - "nonfiction" : academic/scientific frameworks (essay, article, thesis, etc.)
+
+    system_prompt:
+        Optional override for the LLM system prompt.
+        If None, the default prompt for the content_mode is used.
     """
 
     key: str = Field(..., pattern=r"^[a-z][a-z0-9_]{1,49}$")
@@ -83,6 +91,8 @@ class FrameworkDefinition(BaseModel):
     description: str = Field(..., min_length=1, max_length=1000)
     version: str = Field(default="1.0.0", pattern=r"^\d+\.\d+\.\d+$")
     beats: list[BeatDefinition] = Field(..., min_length=2, max_length=50)
+    content_mode: Literal["fiction", "nonfiction"] = "fiction"
+    system_prompt: str | None = Field(default=None, max_length=4000)
 
     MAX_GAP: float = 0.30
 
@@ -120,13 +130,23 @@ class FrameworkDefinition(BaseModel):
 
 
 class ProjectContext(BaseModel):
-    """Input context for outline generation."""
+    """Input context for outline generation.
+
+    Fiction fields (protagonist, setting) are optional to support non-fiction content.
+    For non-fiction use research_question instead of logline when appropriate.
+    """
 
     title: str = Field(..., min_length=1, max_length=200)
     genre: str = Field(..., min_length=1, max_length=100)
     logline: str = Field(..., min_length=10, max_length=500)
-    protagonist: str = Field(..., min_length=1, max_length=200)
-    setting: str = Field(..., min_length=1, max_length=300)
+
+    # Fiction-specific (optional for non-fiction)
+    protagonist: str = Field(default="", max_length=200)
+    setting: str = Field(default="", max_length=300)
+
+    # Non-fiction specific (optional)
+    research_question: str = Field(default="", max_length=500)
+    methodology: str = Field(default="", max_length=300)
 
     themes: list[str] = Field(default_factory=list, max_length=10)
     tone: str = Field(default="", max_length=100)
