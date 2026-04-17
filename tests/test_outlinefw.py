@@ -323,7 +323,7 @@ class TestFrameworks:
 
     def test_list_frameworks_has_all(self) -> None:
         listing = list_frameworks()
-        assert len(listing) == 5
+        assert len(listing) == 9
         assert "dan_harmon" in {f["key"] for f in listing}
 
     def test_framework_has_version(self) -> None:

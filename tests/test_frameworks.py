@@ -39,7 +39,7 @@ def test_get_framework_unknown_raises():
 
 def test_list_frameworks_count():
     result = list_frameworks()
-    assert len(result) == 5
+    assert len(result) == 9
     keys = [f["key"] for f in result]
     assert "save_the_cat" in keys
     assert "dan_harmon" in keys
