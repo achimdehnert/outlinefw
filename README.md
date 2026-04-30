@@ -4,15 +4,31 @@ Story Outline Framework for AI-assisted creative writing.
 
 **Pure Python** — no Django, no DB dependency in the core.
 
+[![PyPI](https://img.shields.io/pypi/v/iil-outlinefw)](https://pypi.org/project/iil-outlinefw/)
+[![Python](https://img.shields.io/pypi/pyversions/iil-outlinefw)](https://pypi.org/project/iil-outlinefw/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Part of the `iil-` platform package family alongside `iil-aifw`, `iil-authoringfw`, `iil-promptfw`.
 
 ## Install
 
 ```bash
 pip install iil-outlinefw
-# or with LLM support:
-pip install iil-outlinefw[aifw]
+# With Outline Wiki knowledge enrichment:
+pip install "iil-outlinefw[knowledge]"
+# With Django adapter:
+pip install "iil-outlinefw[django]"
+# Everything:
+pip install "iil-outlinefw[full]"
 ```
+
+## Extras / Optional Dependencies
+
+| Extra | Dependencies | Purpose |
+|---|---|---|
+| `knowledge` | httpx, pydantic-settings, tenacity | Outline Wiki client + context enrichment |
+| `django` | django>=4.2 | Django service adapter |
+| `full` | all above + dev | Full feature set |
 
 ## Features
 
@@ -79,3 +95,7 @@ src/outlinefw/
 | `iil-authoringfw` | Authoring schemas (chapters, style) |
 | `iil-outlinefw` | Story structure + outline generation |
 | `iil-weltenfw` | WeltenHub REST client |
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
