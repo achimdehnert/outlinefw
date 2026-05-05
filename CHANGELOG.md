@@ -5,21 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.3.2]
+## [0.3.2] — 2026-04-28
 
 ### Fixed
-- Packaging and dependency fixes
+- Packaging metadata: added `[project.urls]` table (Homepage, Repository, Issues)
+- `hatch.build.targets.wheel` packages path corrected to `src/outlinefw`
+- `pyproject.toml` classifiers updated to reflect MIT licence
+- Ruff target-version and import-sort `known-first-party` aligned with `src/` layout
 
 ---
 
-## [0.3.1]
+## [0.3.1] — 2026-04-10
 
 ### Fixed
-- Minor fixes
+- `pytest.ini_options`: `asyncio_mode = "auto"` added — eliminates `PytestUnraisableExceptionWarning` in async tests
+- `coverage.run.omit` now excludes `tests/*` from coverage report
+- Ruff lint ruleset extended (`N`, `UP`, `B`, `C4`, `SIM`, `RUF`) for stricter compliance
 
 ---
 
-## [0.3.0]
+## [0.3.0] — 2026-03-30
 
 ### Added
 - `requires-python = ">=3.12"` — aligns with platform standard
