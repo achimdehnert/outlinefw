@@ -9,3 +9,4 @@ build/
 
 # IDE agent workflows (symlinked, not repo-specific)
 .windsurf/
+.windsurfignore
