@@ -69,6 +69,10 @@ src = ["src"]
 select = ["E", "W", "F", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
 ignore = ["ANN101", "ANN102", "N818"]
 
+[tool.ruff.lint.per-file-ignores]
+# frameworks.py = Content-/Daten-Modul (lange deutsche Beschreibungstexte) — E501 hier toleriert
+"src/outlinefw/frameworks.py" = ["E501"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["outlinefw"]
 

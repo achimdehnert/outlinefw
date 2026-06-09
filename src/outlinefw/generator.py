@@ -295,8 +295,13 @@ class OutlineGenerator:
             framework = get_framework(framework_key)
         except KeyError as e:
             return _error_result(
-                GenerationStatus.VALIDATION_ERROR, framework_key, "",
-                context.title, str(e), 0, start_ms,
+                GenerationStatus.VALIDATION_ERROR,
+                framework_key,
+                "",
+                context.title,
+                str(e),
+                0,
+                start_ms,
             )
 
         messages = [
@@ -314,14 +319,24 @@ class OutlineGenerator:
         except LLMRouterTimeout as e:
             logger.warning("LLM timeout: %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR, framework_key, framework.name,
-                context.title, f"LLM timeout: {e}", len(framework.beats), start_ms,
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                f"LLM timeout: {e}",
+                len(framework.beats),
+                start_ms,
             )
         except LLMRouterError as e:
             logger.error("LLM error: %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR, framework_key, framework.name,
-                context.title, str(e), len(framework.beats), start_ms,
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                str(e),
+                len(framework.beats),
+                start_ms,
             )
 
         return _build_result(raw_response, framework_key, framework, context, start_ms)
@@ -345,8 +360,13 @@ class OutlineGenerator:
             framework = get_framework(framework_key)
         except KeyError as e:
             return _error_result(
-                GenerationStatus.VALIDATION_ERROR, framework_key, "",
-                context.title, str(e), 0, start_ms,
+                GenerationStatus.VALIDATION_ERROR,
+                framework_key,
+                "",
+                context.title,
+                str(e),
+                0,
+                start_ms,
             )
 
         messages = [
@@ -364,14 +384,24 @@ class OutlineGenerator:
         except LLMRouterTimeout as e:
             logger.warning("LLM timeout (async): %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR, framework_key, framework.name,
-                context.title, f"LLM timeout: {e}", len(framework.beats), start_ms,
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                f"LLM timeout: {e}",
+                len(framework.beats),
+                start_ms,
             )
         except LLMRouterError as e:
             logger.error("LLM error (async): %s", e)
             return _error_result(
-                GenerationStatus.LLM_ERROR, framework_key, framework.name,
-                context.title, str(e), len(framework.beats), start_ms,
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                str(e),
+                len(framework.beats),
+                start_ms,
             )
 
         return _build_result(raw_response, framework_key, framework, context, start_ms)
