@@ -338,6 +338,17 @@ class OutlineGenerator:
                 len(framework.beats),
                 start_ms,
             )
+        except Exception as e:  # routers are injected; honor the "never raises" contract
+            logger.error("Unexpected router error: %s", e)
+            return _error_result(
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                f"Unexpected router error: {e}",
+                len(framework.beats),
+                start_ms,
+            )
 
         return _build_result(raw_response, framework_key, framework, context, start_ms)
 
@@ -400,6 +411,17 @@ class OutlineGenerator:
                 framework.name,
                 context.title,
                 str(e),
+                len(framework.beats),
+                start_ms,
+            )
+        except Exception as e:  # routers are injected; honor the "never raises" contract
+            logger.error("Unexpected router error (async): %s", e)
+            return _error_result(
+                GenerationStatus.LLM_ERROR,
+                framework_key,
+                framework.name,
+                context.title,
+                f"Unexpected router error: {e}",
                 len(framework.beats),
                 start_ms,
             )

@@ -6,6 +6,7 @@ Uses pydantic-settings with OUTLINE_ env prefix.
 
 from __future__ import annotations
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 
@@ -20,7 +21,7 @@ class KnowledgeSettings(BaseSettings):
     """
 
     url: str = "https://knowledge.iil.pet"
-    api_token: str = ""
+    api_token: SecretStr = SecretStr("")
     default_limit: int = 10
     timeout: int = 30
 
