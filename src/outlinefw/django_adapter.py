@@ -23,8 +23,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from outlinefw.generator import LLMQuality, OutlineGenerator
-from outlinefw.schemas import OutlineResult, ProjectContext
+from outlinefw.generator import OutlineGenerator
+from outlinefw.schemas import LLMQuality, OutlineResult, ProjectContext
 
 
 class OutlineServiceBase(ABC):
