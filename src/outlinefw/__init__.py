@@ -15,7 +15,6 @@ from importlib.metadata import PackageNotFoundError, version
 from outlinefw.export import to_dict, to_json, to_markdown
 from outlinefw.frameworks import (
     FRAMEWORKS,
-    FrameworkDefinition,
     get_framework,
     list_frameworks,
     register_framework,
@@ -32,6 +31,7 @@ from outlinefw.parser import parse_nodes
 from outlinefw.schemas import (
     ActPhase,
     BeatDefinition,
+    FrameworkDefinition,
     GenerationStatus,
     LLMQuality,
     OutlineGenerationError,
