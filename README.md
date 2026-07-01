@@ -53,9 +53,10 @@ ctx = ProjectContext(
     description="A story about ...",
 )
 
-result = gen.generate(ctx, framework="save_the_cat", chapter_count=15)
+# generate(framework_key, context) — always returns an OutlineResult, never raises
+result = gen.generate("save_the_cat", ctx)
 for node in result.nodes:
-    print(f"{node.order}. {node.title} [{node.beat}]")
+    print(f"{node.position:.2f} {node.title} [{node.beat_name}]")
 ```
 
 ## Frameworks
