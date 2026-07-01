@@ -85,9 +85,10 @@ def _unwrap_nodes(data: Any) -> list[Any] | None:
     if not isinstance(data, dict):
         return None
     for key in ("nodes", "outline", "beats", "result", "data", "items"):
-        if key in data and isinstance(data[key], list):
+        value = data.get(key)
+        if isinstance(value, list):
             logger.debug("Unwrapped nodes from key: %r", key)
-            return data[key]
+            return value
     if "beat_name" in data or "title" in data:
         return [data]
     return None

@@ -15,6 +15,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   a hand-maintained literal that had drifted to `0.3.1` behind the packaged `0.3.2`.
 - README Quick-Start updated to the real `generate(framework_key, context)` signature and the
   actual `OutlineNode` fields (`position`, `beat_name`) — the previous example raised `TypeError`.
+- Resolved the 5 outstanding `mypy --strict` errors (3× `no-any-return` in `parser`/`client`,
+  2× implicit-reexport `attr-defined`); the `Typing :: Typed` classifier is now truthful.
 
 ### Changed
 - Python support unified on 3.12: dropped stale 3.10/3.11 classifiers and bumped ruff
@@ -25,7 +27,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Makefile `format`, `mypy`, and `check` targets (`check` = lint + mypy + test, mirroring CI).
-- CI: `build` job (`python -m build` + `twine check`) and pip caching on all jobs.
+- CI: `build` job (`python -m build` + `twine check`), `typecheck` job (`mypy --strict`), and
+  pip caching on all jobs.
 - Tests for previously-uncovered error paths: unexpected-router-exception, sync-router-into-
   `agenerate()`, `SCHEMA_MISMATCH` branches, and `OutlineWikiClient.update_document()`/`close()`.
 

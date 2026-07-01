@@ -167,14 +167,16 @@ class OutlineWikiClient:
 
         resp = await self._get_client().post("documents.update", json=payload)
         resp.raise_for_status()
-        return resp.json().get("data", {})
+        data: dict[str, Any] = resp.json().get("data", {})
+        return data
 
     @RETRY_POLICY
     async def delete_document(self, document_id: str) -> dict[str, Any]:
         """Delete a document (moves to trash)."""
         resp = await self._get_client().post("documents.delete", json={"id": document_id})
         resp.raise_for_status()
-        return resp.json()
+        result: dict[str, Any] = resp.json()
+        return result
 
     @RETRY_POLICY
     async def list_collections(self) -> list[dict[str, Any]]:
