@@ -131,6 +131,25 @@ class TestOutlineWikiClient:
 
     @respx.mock
     @pytest.mark.asyncio
+    async def test_update_document(self, wiki_client: OutlineWikiClient) -> None:
+        route = respx.post("https://wiki.test/api/documents.update").mock(
+            return_value=httpx.Response(200, json={"data": {"id": "doc-1", "title": "Updated"}})
+        )
+        result = await wiki_client.update_document("doc-1", title="Updated", text="New body")
+        assert result["title"] == "Updated"
+        body = route.calls[0].request.content
+        assert b"Updated" in body and b"New body" in body
+
+    @pytest.mark.asyncio
+    async def test_close_is_idempotent(self, wiki_settings: KnowledgeSettings) -> None:
+        client = OutlineWikiClient(settings=wiki_settings)
+        client._get_client()  # force-create the underlying httpx client
+        await client.close()
+        assert client._client is None
+        await client.close()  # second call must not raise
+
+    @respx.mock
+    @pytest.mark.asyncio
     async def test_list_collections(self, wiki_client: OutlineWikiClient) -> None:
         respx.post("https://wiki.test/api/collections.list").mock(
             return_value=httpx.Response(

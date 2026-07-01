@@ -117,6 +117,19 @@ class TimeoutRouter:
         raise LLMRouterTimeout("simulated timeout")
 
 
+class GenericErrorRouter:
+    """Router raising an exception NOT derived from LLMRouterError/Timeout."""
+
+    def completion(
+        self,
+        action_code: str,
+        messages: list[dict[str, str]],
+        quality: LLMQuality = LLMQuality.STANDARD,
+        priority: str = "balanced",
+    ) -> str:
+        raise ValueError("boom: unexpected non-router error")
+
+
 class EmptyRouter:
     def completion(
         self,
@@ -365,6 +378,16 @@ class TestParseNodes:
     def test_malformed_json(self) -> None:
         assert parse_nodes("{not: valid}").status == ParseStatus.MALFORMED_JSON
 
+    def test_schema_mismatch_when_no_node_list(self) -> None:
+        # Valid JSON scalar → _unwrap_nodes returns None → SCHEMA_MISMATCH.
+        assert parse_nodes("42").status == ParseStatus.SCHEMA_MISMATCH
+
+    def test_schema_mismatch_when_all_nodes_non_dict(self) -> None:
+        # A list of non-dict entries → every node fails coercion → SCHEMA_MISMATCH.
+        result = parse_nodes("[1, 2, 3]")
+        assert result.status == ParseStatus.SCHEMA_MISMATCH
+        assert len(result.failed_nodes) == 3
+
     def test_fenced_json(self) -> None:
         raw = f"```json\n{_make_nodes_json(THREE_ACT)}\n```"
         assert parse_nodes(raw).status == ParseStatus.SUCCESS
@@ -430,6 +453,19 @@ class TestOutlineGenerator:
         result = OutlineGenerator(router=TimeoutRouter()).generate("three_act", sample_context)
         assert result.status == GenerationStatus.LLM_ERROR
         assert "timeout" in result.error_message.lower()
+
+    def test_unexpected_router_error_does_not_raise(self, sample_context: ProjectContext) -> None:
+        # Contract: generate() always returns an OutlineResult, never raises —
+        # even when the injected router throws a non-LLMRouterError exception.
+        result = OutlineGenerator(router=GenericErrorRouter()).generate("three_act", sample_context)
+        assert result.status == GenerationStatus.LLM_ERROR
+        assert "unexpected" in result.error_message.lower()
+
+    @pytest.mark.asyncio
+    async def test_sync_router_into_agenerate_raises(self, sample_context: ProjectContext) -> None:
+        # GoodRouter is sync-only (no acompletion) → agenerate() must reject it.
+        with pytest.raises(TypeError, match="AsyncLLMRouter"):
+            await OutlineGenerator(router=GoodRouter()).agenerate("three_act", sample_context)
 
     def test_empty_response(self, sample_context: ProjectContext) -> None:
         result = OutlineGenerator(router=EmptyRouter()).generate("three_act", sample_context)

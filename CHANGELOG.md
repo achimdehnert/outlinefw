@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- `OutlineGenerator.generate()`/`agenerate()` now honour their "never raises" contract for
+  *any* router exception — a non-`LLMRouterError`/`Timeout` exception (e.g. `ValueError`, raw
+  `httpx` errors) is caught and mapped to `GenerationStatus.LLM_ERROR` instead of propagating.
+- `__version__` is now derived from installed package metadata (`importlib.metadata`) instead of
+  a hand-maintained literal that had drifted to `0.3.1` behind the packaged `0.3.2`.
+- README Quick-Start updated to the real `generate(framework_key, context)` signature and the
+  actual `OutlineNode` fields (`position`, `beat_name`) — the previous example raised `TypeError`.
+
+### Changed
+- Python support unified on 3.12: dropped stale 3.10/3.11 classifiers and bumped ruff
+  `target-version`/mypy `python_version` to match `requires-python = ">=3.12"`. Status enums
+  migrated to `enum.StrEnum` accordingly.
+- `KnowledgeSettings.api_token` is now a `pydantic.SecretStr` so the Outline bearer token no
+  longer leaks through `repr()`/logs/tracebacks.
+
+### Added
+- Makefile `format`, `mypy`, and `check` targets (`check` = lint + mypy + test, mirroring CI).
+- CI: `build` job (`python -m build` + `twine check`) and pip caching on all jobs.
+- Tests for previously-uncovered error paths: unexpected-router-exception, sync-router-into-
+  `agenerate()`, `SCHEMA_MISMATCH` branches, and `OutlineWikiClient.update_document()`/`close()`.
+
+---
+
 ## [0.3.2] — 2026-04-28
 
 ### Fixed

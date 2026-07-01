@@ -17,8 +17,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Typing :: Typed",
 ]
@@ -61,7 +59,7 @@ Issues = "https://github.com/achimdehnert/outlinefw/issues"
 packages = ["src/outlinefw"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 line-length = 100
 src = ["src"]
 
@@ -77,7 +75,7 @@ ignore = ["ANN101", "ANN102", "N818"]
 known-first-party = ["outlinefw"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 strict = true
 mypy_path = "src"
 packages = ["outlinefw"]

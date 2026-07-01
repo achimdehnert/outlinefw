@@ -6,13 +6,13 @@ Pydantic schemas for iil-outlinefw.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-class ActPhase(str, Enum):
+class ActPhase(StrEnum):
     ACT_1 = "act_1"
     ACT_2A = "act_2a"
     ACT_2B = "act_2b"
@@ -21,14 +21,14 @@ class ActPhase(str, Enum):
     ACT_CLOSE = "act_close"
 
 
-class TensionLevel(str, Enum):
+class TensionLevel(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     PEAK = "peak"
 
 
-class GenerationStatus(str, Enum):
+class GenerationStatus(StrEnum):
     SUCCESS = "success"
     PARTIAL = "partial"
     PARSE_ERROR = "parse_error"
@@ -36,7 +36,7 @@ class GenerationStatus(str, Enum):
     VALIDATION_ERROR = "validation_error"
 
 
-class ParseStatus(str, Enum):
+class ParseStatus(StrEnum):
     SUCCESS = "success"
     EMPTY = "empty"
     MALFORMED_JSON = "malformed_json"

@@ -69,7 +69,7 @@ class OutlineWikiClient:
         return httpx.AsyncClient(
             base_url=f"{self._settings.url}/api/",
             headers={
-                "Authorization": f"Bearer {self._settings.api_token}",
+                "Authorization": f"Bearer {self._settings.api_token.get_secret_value()}",
                 "Content-Type": "application/json",
             },
             timeout=self._settings.timeout,

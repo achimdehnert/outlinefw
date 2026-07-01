@@ -10,6 +10,8 @@ Stable API (semantic versioning: breaking changes -> MAJOR bump):
   Frameworks: FRAMEWORKS, get_framework, list_frameworks, register_framework
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 from outlinefw.export import to_dict, to_json, to_markdown
 from outlinefw.frameworks import (
     FRAMEWORKS,
@@ -41,7 +43,10 @@ from outlinefw.schemas import (
     TensionLevel,
 )
 
-__version__ = "0.3.1"
+try:
+    __version__ = version("iil-outlinefw")
+except PackageNotFoundError:  # running from source without an install
+    __version__ = "0.0.0+unknown"
 
 __all__ = [
     # Framework Registry
