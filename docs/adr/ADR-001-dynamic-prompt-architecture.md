@@ -1,3 +1,8 @@
+---
+status: accepted  # auto-migriert (Fleet-Audit F-1): Body ohne Status — im Review bestätigen
+date: 2026-04-02
+---
+
 # ADR-001: Dynamic Prompt Architecture — Context-driven Outline Generation
 
 **Status:** Accepted  
