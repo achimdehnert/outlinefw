@@ -15,8 +15,10 @@ permissions:
 
 jobs:
   ci:
-    uses: achimdehnert/platform/.github/workflows/_ci-pypi.yml@main
+    uses: achimdehnert/platform/.github/workflows/_ci-pypi.yml@session/2026-07-04/achim-dehnert/ci-pypi-gate
     with:
       python_versions: '["3.12"]'
       install_extra: 'dev'
       test_path: 'tests/'
+      enable_mypy: true
+      mypy_blocking: true
