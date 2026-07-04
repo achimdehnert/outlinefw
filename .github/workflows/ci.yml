@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   ci:
-    uses: achimdehnert/platform/.github/workflows/_ci-pypi.yml@8cbe4b7a67f5bb6b71717ba1ca33675db76fb5f5
+    uses: iilgmbh/shared-ci/.github/workflows/_ci-pypi.yml@19aff9f73a76a5104813d1515006472608e04fa0
     with:
       python_versions: '["3.12"]'
       install_extra: 'dev'
