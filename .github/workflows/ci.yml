@@ -22,3 +22,4 @@ jobs:
       test_path: 'tests/'
       enable_mypy: true
       mypy_blocking: true
+      mypy_args: '-p outlinefw'
