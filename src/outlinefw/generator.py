@@ -11,12 +11,21 @@ Prompt Architecture (ADR-001):
     3. Framework-specific instructions (FrameworkDefinition.llm_instructions)
   content_mode routes to the appropriate context labeling (fiction vs. nonfiction)
   but does NOT restrict which fields are available.
+
+Injectable Prompt Builders (ADR-204, since 0.4.0):
+  OutlineGenerator accepts optional user_prompt_builder/system_prompt_builder
+  callables so a consumer can render the prompt text from its own template
+  system (e.g. promptfw) instead of the built-in string templates below.
+  Omitting them keeps the pre-0.4.0 behavior byte-identical. The built-in
+  templates remain public as default_user_prompt/default_system_prompt so a
+  consumer's template can embed them rather than reimplement them.
 """
 
 from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from typing import Any, Protocol, runtime_checkable
 
 from outlinefw.frameworks import get_framework
@@ -72,6 +81,13 @@ class AsyncLLMRouter(Protocol):
         quality: LLMQuality = LLMQuality.STANDARD,
         priority: str = "balanced",
     ) -> str: ...
+
+
+# Consumer-injectable prompt builders (ADR-204: prompts live in templates).
+# A consumer (e.g. writing-hub/promptfw) implements these to replace the
+# rendered prompt text while keeping the framework/context data model.
+UserPromptBuilder = Callable[[FrameworkDefinition, ProjectContext], str]
+SystemPromptBuilder = Callable[[FrameworkDefinition], str]
 
 
 # Single unified system prompt — content-type agnostic
@@ -176,6 +192,13 @@ def _get_system_prompt(framework: FrameworkDefinition) -> str:
     return framework.system_prompt or _SYSTEM_PROMPT
 
 
+# Public default builders (ADR-204): a consumer that injects its own
+# user_prompt_builder/system_prompt_builder into OutlineGenerator can embed
+# these defaults inside its own template instead of reimplementing them.
+default_user_prompt: UserPromptBuilder = _build_user_prompt
+default_system_prompt: SystemPromptBuilder = _get_system_prompt
+
+
 # Legacy helpers (backward compat)
 def _build_fiction_user_prompt(framework: FrameworkDefinition, context: ProjectContext) -> str:
     return _build_user_prompt(framework, context)
@@ -270,13 +293,37 @@ class OutlineGenerator:
         result = generator.generate("save_the_cat", context=ProjectContext(...))
     """
 
-    def __init__(self, router: LLMRouter | AsyncLLMRouter) -> None:
+    def __init__(
+        self,
+        router: LLMRouter | AsyncLLMRouter,
+        *,
+        user_prompt_builder: UserPromptBuilder | None = None,
+        system_prompt_builder: SystemPromptBuilder | None = None,
+    ) -> None:
+        """
+        Args:
+            router: LLMRouter or AsyncLLMRouter implementation.
+            user_prompt_builder: Optional override for the user-prompt text.
+                Called as ``builder(framework, context) -> str``. Defaults to
+                ``default_user_prompt`` (byte-identical to pre-0.4.0 behavior)
+                when omitted. Lets a consumer (e.g. a promptfw template, per
+                ADR-204) fully replace the rendered prompt while still
+                receiving the framework/context data model.
+            system_prompt_builder: Optional override for the system-prompt
+                text. Called as ``builder(framework) -> str``. Defaults to
+                ``default_system_prompt`` (framework.system_prompt override,
+                else the unified default) when omitted.
+        """
         if not isinstance(router, (LLMRouter, AsyncLLMRouter)):
             raise TypeError(
                 f"router must implement LLMRouter or AsyncLLMRouter Protocol. "
                 f"Got: {type(router).__name__}"
             )
         self._router = router
+        self._user_prompt_builder: UserPromptBuilder = user_prompt_builder or default_user_prompt
+        self._system_prompt_builder: SystemPromptBuilder = (
+            system_prompt_builder or default_system_prompt
+        )
 
     def generate(
         self,
@@ -305,8 +352,8 @@ class OutlineGenerator:
             )
 
         messages = [
-            {"role": "system", "content": _get_system_prompt(framework)},
-            {"role": "user", "content": _build_user_prompt(framework, context)},
+            {"role": "system", "content": self._system_prompt_builder(framework)},
+            {"role": "user", "content": self._user_prompt_builder(framework, context)},
         ]
 
         try:
@@ -381,8 +428,8 @@ class OutlineGenerator:
             )
 
         messages = [
-            {"role": "system", "content": _get_system_prompt(framework)},
-            {"role": "user", "content": _build_user_prompt(framework, context)},
+            {"role": "system", "content": self._system_prompt_builder(framework)},
+            {"role": "user", "content": self._user_prompt_builder(framework, context)},
         ]
 
         try:

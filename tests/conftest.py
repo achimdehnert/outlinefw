@@ -58,6 +58,38 @@ class GoodRouter:
         return make_nodes_json(self._fw)
 
 
+class RecordingRouter:
+    """Sync+async router that records the messages it was called with.
+
+    Used to verify which system/user prompt text OutlineGenerator actually
+    sends to the router (default builders vs. injected overrides).
+    """
+
+    def __init__(self, framework_key: str = "three_act") -> None:
+        self._fw = get_framework(framework_key)
+        self.last_messages: list[dict[str, str]] | None = None
+
+    def completion(
+        self,
+        action_code: str,
+        messages: list[dict[str, str]],
+        quality: LLMQuality = LLMQuality.STANDARD,
+        priority: str = "balanced",
+    ) -> str:
+        self.last_messages = messages
+        return make_nodes_json(self._fw)
+
+    async def acompletion(
+        self,
+        action_code: str,
+        messages: list[dict[str, str]],
+        quality: LLMQuality = LLMQuality.STANDARD,
+        priority: str = "balanced",
+    ) -> str:
+        self.last_messages = messages
+        return make_nodes_json(self._fw)
+
+
 class AsyncGoodRouter:
     """Async router that returns valid JSON for a given framework."""
 

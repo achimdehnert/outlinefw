@@ -7,6 +7,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+---
+
+## [0.4.0] — 2026-09-23
+
+### Added
+- `OutlineGenerator(router, *, user_prompt_builder=None, system_prompt_builder=None)`: a consumer
+  (e.g. writing-hub/promptfw, ADR-204) can now inject callables that replace the rendered
+  system/user prompt text at *every* call site (`generate()` and `agenerate()`), while the
+  framework/context data model stays the same. Omitting both keeps 0.3.x behaviour
+  byte-identical. The built-in templates remain public as `default_user_prompt(framework,
+  context)` / `default_system_prompt(framework)` so a consumer's template can embed them instead
+  of reimplementing them. (writing-hub#1261 K2)
+- `scientific_essay` framework gained a leading `abstract` beat (position 0.0) ahead of
+  `einleitung` — a short (~150-250 word) summary of research question, approach and key
+  finding. The remaining 7 beats were repositioned to keep `FrameworkDefinition`'s validation
+  rules (first ≤ 0.1, last ≥ 0.9, max gap 0.30) satisfied; no beat was renamed or removed.
+  (writing-hub#1261 K4)
+- Makefile `format`, `mypy`, and `check` targets (`check` = lint + mypy + test, mirroring CI).
+- CI: `build` job (`python -m build` + `twine check`), `typecheck` job (`mypy --strict`), and
+  pip caching on all jobs.
+- Tests for previously-uncovered error paths: unexpected-router-exception, sync-router-into-
+  `agenerate()`, `SCHEMA_MISMATCH` branches, and `OutlineWikiClient.update_document()`/`close()`.
+
 ### Fixed
 - `OutlineGenerator.generate()`/`agenerate()` now honour their "never raises" contract for
   *any* router exception — a non-`LLMRouterError`/`Timeout` exception (e.g. `ValueError`, raw
@@ -24,13 +47,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   migrated to `enum.StrEnum` accordingly.
 - `KnowledgeSettings.api_token` is now a `pydantic.SecretStr` so the Outline bearer token no
   longer leaks through `repr()`/logs/tracebacks.
-
-### Added
-- Makefile `format`, `mypy`, and `check` targets (`check` = lint + mypy + test, mirroring CI).
-- CI: `build` job (`python -m build` + `twine check`), `typecheck` job (`mypy --strict`), and
-  pip caching on all jobs.
-- Tests for previously-uncovered error paths: unexpected-router-exception, sync-router-into-
-  `agenerate()`, `SCHEMA_MISMATCH` branches, and `OutlineWikiClient.update_document()`/`close()`.
 
 ---
 

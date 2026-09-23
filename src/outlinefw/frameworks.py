@@ -445,43 +445,53 @@ SCIENTIFIC_ESSAY = FrameworkDefinition(
     ),
     beats=[
         BeatDefinition(
-            name="einleitung",
+            name="abstract",
             position=0.0,
+            act=ActPhase.ACT_OPEN,
+            description=(
+                "Kompakte Zusammenfassung von Fragestellung, Vorgehen und Kernergebnis "
+                "in ca. 150-250 Woertern, eigenstaendig lesbar ohne den Volltext."
+            ),
+            tension=TensionLevel.LOW,
+        ),
+        BeatDefinition(
+            name="einleitung",
+            position=0.08,
             act=ActPhase.ACT_OPEN,
             description="These, Problemstellung, wissenschaftliche Relevanz und Aufbau des Aufsatzes.",
             tension=TensionLevel.LOW,
         ),
         BeatDefinition(
             name="forschungsstand",
-            position=0.15,
+            position=0.20,
             act=ActPhase.ACT_1,
             description="Einordnung in bestehende Literatur, Forschungsluecke benennen.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="theoretischer_rahmen",
-            position=0.28,
+            position=0.32,
             act=ActPhase.ACT_1,
             description="Theoretische Grundlagen, Schluesselkonzepte und analytisches Instrumentarium.",
             tension=TensionLevel.MEDIUM,
         ),
         BeatDefinition(
             name="hauptargument_1",
-            position=0.45,
+            position=0.48,
             act=ActPhase.ACT_2A,
             description="Erstes zentrales Argument mit Belegen, Beispielen und Analyse.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="hauptargument_2",
-            position=0.62,
+            position=0.64,
             act=ActPhase.ACT_2B,
             description="Zweites zentrales Argument, vertiefend oder kontrastierend zum ersten.",
             tension=TensionLevel.HIGH,
         ),
         BeatDefinition(
             name="diskussion",
-            position=0.78,
+            position=0.80,
             act=ActPhase.ACT_3,
             description="Kritische Wuerdigung, Gegenargumente, Grenzen der Analyse, Implikationen.",
             tension=TensionLevel.PEAK,

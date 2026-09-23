@@ -6,6 +6,7 @@ Public API for iil-outlinefw.
 Stable API (semantic versioning: breaking changes -> MAJOR bump):
   Schemas:    ProjectContext, OutlineNode, OutlineResult, ParseResult
   Generator:  OutlineGenerator, LLMRouter, LLMRouterError, LLMRouterTimeout
+  Prompts:    default_user_prompt, default_system_prompt (ADR-204, since 0.4.0)
   Parser:     parse_nodes
   Frameworks: FRAMEWORKS, get_framework, list_frameworks, register_framework
 """
@@ -26,6 +27,8 @@ from outlinefw.generator import (
     LLMRouterError,
     LLMRouterTimeout,
     OutlineGenerator,
+    default_system_prompt,
+    default_user_prompt,
 )
 from outlinefw.parser import parse_nodes
 from outlinefw.schemas import (
@@ -73,6 +76,8 @@ __all__ = [
     "TensionLevel",
     # Version
     "__version__",
+    "default_system_prompt",
+    "default_user_prompt",
     "get_framework",
     "list_frameworks",
     "parse_nodes",
