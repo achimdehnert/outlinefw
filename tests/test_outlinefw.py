@@ -31,7 +31,13 @@ from outlinefw.frameworks import (
     get_framework,
     list_frameworks,
 )
-from outlinefw.generator import LLMRouterError, LLMRouterTimeout, OutlineGenerator
+from outlinefw.generator import (
+    LLMRouterError,
+    LLMRouterTimeout,
+    OutlineGenerator,
+    default_system_prompt,
+    default_user_prompt,
+)
 from outlinefw.parser import _preprocess, parse_nodes
 from outlinefw.schemas import (
     ActPhase,
@@ -45,6 +51,7 @@ from outlinefw.schemas import (
     ProjectContext,
     TensionLevel,
 )
+from tests.conftest import RecordingRouter
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -484,6 +491,91 @@ class TestOutlineGenerator:
             "save_the_cat", sample_context
         )
         assert result.total_beats == 15
+
+
+class TestPromptBuilders:
+    """OutlineGenerator's injectable user_prompt_builder/system_prompt_builder (ADR-204)."""
+
+    def test_should_use_default_builders_byte_identical_when_omitted(
+        self, sample_context: ProjectContext
+    ) -> None:
+        # No builders passed -> pre-0.4.0 behavior, byte-identical to the
+        # public default_* functions.
+        fw = get_framework("three_act")
+        router = RecordingRouter("three_act")
+        OutlineGenerator(router=router).generate("three_act", sample_context)
+
+        assert router.last_messages is not None
+        assert router.last_messages[0] == {
+            "role": "system",
+            "content": default_system_prompt(fw),
+        }
+        assert router.last_messages[1] == {
+            "role": "user",
+            "content": default_user_prompt(fw, sample_context),
+        }
+
+    def test_should_use_injected_user_prompt_builder(self, sample_context: ProjectContext) -> None:
+        router = RecordingRouter("three_act")
+        gen = OutlineGenerator(
+            router=router,
+            user_prompt_builder=lambda framework, context: (
+                f"CUSTOM-USER::{framework.key}::{context.title}"
+            ),
+        )
+        gen.generate("three_act", sample_context)
+
+        assert router.last_messages is not None
+        assert (
+            router.last_messages[1]["content"] == f"CUSTOM-USER::three_act::{sample_context.title}"
+        )
+        # system prompt stays the default when only the user builder is overridden
+        assert router.last_messages[0]["content"] == default_system_prompt(
+            get_framework("three_act")
+        )
+
+    def test_should_use_injected_system_prompt_builder(
+        self, sample_context: ProjectContext
+    ) -> None:
+        router = RecordingRouter("three_act")
+        gen = OutlineGenerator(
+            router=router,
+            system_prompt_builder=lambda framework: f"CUSTOM-SYSTEM::{framework.key}",
+        )
+        gen.generate("three_act", sample_context)
+
+        assert router.last_messages is not None
+        assert router.last_messages[0]["content"] == "CUSTOM-SYSTEM::three_act"
+
+    @pytest.mark.asyncio
+    async def test_should_use_injected_builders_in_agenerate_too(
+        self, sample_context: ProjectContext
+    ) -> None:
+        # The second call site (agenerate, around the historic line 384) must
+        # honor the same injected builders as the sync path.
+        router = RecordingRouter("three_act")
+        gen = OutlineGenerator(
+            router=router,
+            user_prompt_builder=lambda framework, context: "CUSTOM-USER-ASYNC",
+            system_prompt_builder=lambda framework: "CUSTOM-SYSTEM-ASYNC",
+        )
+        await gen.agenerate("three_act", sample_context)
+
+        assert router.last_messages is not None
+        assert router.last_messages[0]["content"] == "CUSTOM-SYSTEM-ASYNC"
+        assert router.last_messages[1]["content"] == "CUSTOM-USER-ASYNC"
+
+    def test_should_expose_default_builders_as_public_module_functions(self) -> None:
+        # Consumers embed these in their own promptfw template (writing-hub#1261 K2)
+        # instead of reimplementing the built-in prompt text.
+        fw = get_framework("scientific_essay")
+        context = ProjectContext(
+            title="Titel",
+            genre="Essay",
+            logline="Eine ausreichend lange Kernaussage fuer den Test.",
+        )
+        assert default_system_prompt(fw)
+        assert default_user_prompt(fw, context)
 
 
 # ---------------------------------------------------------------------------
